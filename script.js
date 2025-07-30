@@ -143,6 +143,135 @@ class ChapterViewer {
         return null;
     }
 
+    async findAllAudioFiles(folderPath, chapterId = null, sectionId = null) {
+        const audioExtensions = ['mp3', 'wav', 'ogg', 'm4a'];
+        const foundFiles = [];
+        
+        console.log(`Looking for audio files in ${folderPath}`);
+        
+        // Common patterns to try
+        const patterns = [];
+        
+        // If we have chapter and section info, try the specific pattern first
+        if (chapterId && sectionId) {
+            const chapterNum = chapterId.toLowerCase();
+            const sectionNum = sectionId.toLowerCase();
+            patterns.push(`${chapterNum}${sectionNum}`);
+        }
+        
+        // Add common naming patterns
+        patterns.push(
+            'audio', 'section', 'main', 'track', 'sound', 'clip',
+            '01', '02', '03', '04', '05', '06', '07', '08', '09', '10',
+            '1', '2', '3', '4', '5', '6', '7', '8', '9', '10',
+            '11', '12', '13', '14', '15', '16', '17', '18', '19', '20',
+            'intro', 'outro', 'beginning', 'end', 'start', 'finish',
+            'chapter', 'part', 'segment', 'piece',
+            // Patterns with hyphens
+            '1-escena', '2-conversacion', '3-dialogo', '4-narracion', '5-resumen',
+            '1-scene', '2-conversation', '3-dialogue', '4-narration', '5-summary',
+            '1-intro', '2-main', '3-outro', '4-conclusion', '5-final'
+        );
+        
+        // Try all combinations of patterns and extensions
+        for (const pattern of patterns) {
+            for (const ext of audioExtensions) {
+                try {
+                    const audioPath = `${folderPath}${pattern}.${ext}`;
+                    const response = await fetch(audioPath, { method: 'HEAD' });
+                    if (response.ok) {
+                        const fileName = `${pattern}.${ext}`;
+                        console.log(`Found audio file: ${audioPath}`);
+                        foundFiles.push({
+                            path: audioPath,
+                            name: fileName,
+                            displayName: this.formatAudioName(fileName)
+                        });
+                    }
+                } catch (error) {
+                    // Continue to next combination
+                }
+            }
+        }
+        
+        // Try some additional patterns that might exist
+        const additionalPatterns = [
+            'description', 'dialogue', 'narration', 'voice', 'speech',
+            'summary', 'title', 'chapter_summary', 'section_title',
+            'chapter_summary_beginning', 'chapter_summary_end',
+            'location_description', 'Glaucón_Sócrates', 'Teofrasto_solo'
+        ];
+        
+        for (const pattern of additionalPatterns) {
+            for (const ext of audioExtensions) {
+                try {
+                    const audioPath = `${folderPath}${pattern}.${ext}`;
+                    const response = await fetch(audioPath, { method: 'HEAD' });
+                    if (response.ok) {
+                        const fileName = `${pattern}.${ext}`;
+                        // Check if we already found this file
+                        if (!foundFiles.some(f => f.path === audioPath)) {
+                            console.log(`Found additional audio file: ${audioPath}`);
+                            foundFiles.push({
+                                path: audioPath,
+                                name: fileName,
+                                displayName: this.formatAudioName(fileName)
+                            });
+                        }
+                    }
+                } catch (error) {
+                    // Continue to next combination
+                }
+            }
+        }
+        
+        console.log(`Found ${foundFiles.length} audio files in ${folderPath}`);
+        return foundFiles;
+    }
+    
+    formatAudioName(fileName) {
+        // Remove extension
+        let name = fileName.replace(/\.(mp3|wav|ogg|m4a)$/i, '');
+        
+        // Format common patterns
+        const formatMap = {
+            'chapter_summary_beginning': 'Resumen del capítulo (inicio)',
+            'chapter_summary_end': 'Resumen del capítulo (final)',
+            'section_title': 'Título de sección',
+            'location_description': 'Descripción del lugar',
+            'dialogue_Glaucón_Sócrates': 'Diálogo: Glaucón y Sócrates',
+            'Teofrasto_solo': 'Teofrasto (monólogo)',
+            'description': 'Descripción',
+            'dialogue': 'Diálogo',
+            'narration': 'Narración',
+            'summary': 'Resumen',
+            'intro': 'Introducción',
+            'outro': 'Conclusión',
+            // Spanish patterns with hyphens
+            '1-escena': '1. Escena',
+            '2-conversacion': '2. Conversación',
+            '3-dialogo': '3. Diálogo',
+            '4-narracion': '4. Narración',
+            '5-resumen': '5. Resumen',
+            // English patterns with hyphens
+            '1-scene': '1. Scene',
+            '2-conversation': '2. Conversation',
+            '3-dialogue': '3. Dialogue',
+            '4-narration': '4. Narration',
+            '5-summary': '5. Summary'
+        };
+        
+        if (formatMap[name]) {
+            return formatMap[name];
+        }
+        
+        // Replace underscores with spaces and capitalize
+        name = name.replace(/_/g, ' ');
+        name = name.replace(/\b\w/g, l => l.toUpperCase());
+        
+        return name;
+    }
+
 
     async renderNavigation() {
         const nav = document.getElementById('chapter-nav');
@@ -235,14 +364,18 @@ class ChapterViewer {
             
             const text = await response.text();
             
-            // Load the actual title for this chapter
+            // Load the actual title and audio for this chapter
             const titlePath = `book1/${chapter.id}/title.txt`;
+            const audioFolderPath = `book1/${chapter.id}/`;
+            
             const actualTitle = await this.loadTitle(titlePath) || chapter.title;
+            const audioFiles = await this.findAllAudioFiles(audioFolderPath, chapter.id);
             
             // Create an enhanced chapter object with loaded data
             const enhancedChapter = {
                 ...chapter,
-                title: actualTitle
+                title: actualTitle,
+                audioFiles: audioFiles
             };
             
             this.renderContent(enhancedChapter, text, 'chapter');
@@ -271,15 +404,18 @@ class ChapterViewer {
             // Load the actual title and description for this section
             const titlePath = `book1/${chapter.id}/${section.id}/title.txt`;
             const descriptionPath = `book1/${chapter.id}/${section.id}/description.txt`;
+            const audioFolderPath = `book1/${chapter.id}/${section.id}/`;
             
             const actualTitle = await this.loadTitle(titlePath) || section.title;
             const actualDescription = await this.loadDescription(descriptionPath);
+            const audioFiles = await this.findAllAudioFiles(audioFolderPath, chapter.id, section.id);
             
             // Create an enhanced section object with loaded data
             const enhancedSection = {
                 ...section,
                 title: actualTitle,
-                description: actualDescription
+                description: actualDescription,
+                audioFiles: audioFiles
             };
             
             this.renderContent(enhancedSection, text, 'section', chapter);
@@ -318,49 +454,65 @@ class ChapterViewer {
             header.appendChild(description);
         }
         
-        // Check if audio file exists and add player
-        if (item.audioFile) {
-            const audioPlayer = document.createElement('div');
-            audioPlayer.className = 'audio-player';
+        // Check if audio files exist and add players
+        if (item.audioFiles && item.audioFiles.length > 0) {
+            const audioSection = document.createElement('div');
+            audioSection.className = 'audio-section';
             
-            const audio = document.createElement('audio');
-            audio.controls = true;
-            audio.preload = 'metadata';
-            audio.src = item.audioFile;
+            item.audioFiles.forEach((audioFile, index) => {
+                const audioPlayerContainer = document.createElement('div');
+                audioPlayerContainer.className = 'audio-player-container';
+                
+                // Add audio file label
+                const audioLabel = document.createElement('div');
+                audioLabel.className = 'audio-label';
+                audioLabel.textContent = audioFile.displayName;
+                audioPlayerContainer.appendChild(audioLabel);
+                
+                // Create audio player
+                const audio = document.createElement('audio');
+                audio.controls = true;
+                audio.preload = 'metadata';
+                audio.src = audioFile.path;
+                
+                // Add source with correct type
+                const source = document.createElement('source');
+                source.src = audioFile.path;
+                
+                if (audioFile.path.toLowerCase().endsWith('.mp3')) {
+                    source.type = 'audio/mpeg';
+                } else if (audioFile.path.toLowerCase().endsWith('.wav')) {
+                    source.type = 'audio/wav';
+                } else if (audioFile.path.toLowerCase().endsWith('.ogg')) {
+                    source.type = 'audio/ogg';
+                } else if (audioFile.path.toLowerCase().endsWith('.m4a')) {
+                    source.type = 'audio/mp4';
+                }
+                
+                audio.appendChild(source);
+                
+                // Better error handling
+                audio.onerror = (e) => {
+                    console.warn(`Audio file not found or cannot be loaded: ${audioFile.path}`);
+                    audioPlayerContainer.innerHTML = `
+                        <div class="audio-label">${audioFile.displayName}</div>
+                        <p style="color: #666; font-style: italic; margin: 5px 0; font-size: 0.9em;">Audio no disponible</p>
+                    `;
+                };
+                
+                audio.onloadstart = () => {
+                    console.log(`Loading audio: ${audioFile.path}`);
+                };
+                
+                audio.oncanplay = () => {
+                    console.log(`Audio ready to play: ${audioFile.path}`);
+                };
+                
+                audioPlayerContainer.appendChild(audio);
+                audioSection.appendChild(audioPlayerContainer);
+            });
             
-            // Add multiple source formats for better compatibility
-            const mp3Source = document.createElement('source');
-            mp3Source.src = item.audioFile;
-            mp3Source.type = 'audio/mpeg';
-            
-            const oggSource = document.createElement('source');
-            oggSource.src = item.audioFile.replace('.mp3', '.ogg');
-            oggSource.type = 'audio/ogg';
-            
-            const wavSource = document.createElement('source');
-            wavSource.src = item.audioFile.replace('.mp3', '.wav');
-            wavSource.type = 'audio/wav';
-            
-            audio.appendChild(mp3Source);
-            audio.appendChild(oggSource);
-            audio.appendChild(wavSource);
-            
-            // Better error handling
-            audio.onerror = (e) => {
-                console.warn(`Audio file not found or cannot be loaded: ${item.audioFile}`);
-                audioPlayer.innerHTML = '<p style="color: #666; font-style: italic; margin: 10px 0;">Audio no disponible</p>';
-            };
-            
-            audio.onloadstart = () => {
-                console.log(`Loading audio: ${item.audioFile}`);
-            };
-            
-            audio.oncanplay = () => {
-                console.log(`Audio ready to play: ${item.audioFile}`);
-            };
-            
-            audioPlayer.appendChild(audio);
-            header.appendChild(audioPlayer);
+            header.appendChild(audioSection);
         }
         
         const textDiv = document.createElement('div');
@@ -384,6 +536,26 @@ class ChapterViewer {
         content.innerHTML = '';
         content.appendChild(header);
         content.appendChild(textDiv);
+        
+        // Dynamically adjust content padding based on header height
+        this.adjustContentPadding();
+    }
+    
+    adjustContentPadding() {
+        // Wait for next frame to ensure DOM is updated
+        requestAnimationFrame(() => {
+            const header = document.querySelector('.chapter-header, .section-header');
+            const content = document.getElementById('chapter-content');
+            
+            if (header && content) {
+                const headerHeight = header.offsetHeight;
+                const baseOffset = 20; // Small buffer space
+                const totalPadding = headerHeight + baseOffset;
+                
+                content.style.paddingTop = `${totalPadding}px`;
+                console.log(`Adjusted content padding to ${totalPadding}px (header: ${headerHeight}px + buffer: ${baseOffset}px)`);
+            }
+        });
     }
 
     renderError(item, type = 'chapter', parentChapter = null) {

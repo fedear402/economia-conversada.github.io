@@ -149,7 +149,7 @@ body {
     margin-left: 250px;
     padding: 20px;
     max-width: 800px;
-    padding-top: 280px; /* Much larger space for fixed header with breadcrumb, title, description, and audio */
+    padding-top: 40px; /* Base padding - will be adjusted dynamically */
 }
 
 .chapter-header, .section-header {
@@ -207,6 +207,38 @@ body {
     border-radius: 0 4px 4px 0;
 }
 
+.audio-section {
+    margin-bottom: 20px;
+}
+
+.audio-player-container {
+    margin-bottom: 15px;
+    padding: 10px;
+    background-color: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 6px;
+}
+
+.audio-player-container:last-child {
+    margin-bottom: 0;
+}
+
+.audio-label {
+    font-size: 0.9em;
+    font-weight: 600;
+    color: #495057;
+    margin-bottom: 8px;
+    padding-bottom: 5px;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.audio-player-container audio {
+    width: 100%;
+    height: 35px;
+    outline: none;
+}
+
+/* Legacy support for single audio player */
 .audio-player {
     margin-bottom: 20px;
 }
