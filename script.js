@@ -12,69 +12,110 @@ class ChapterViewer {
     }
 
     async loadBookStructure() {
-        try {
-            // Try to load the static book structure first
-            const response = await fetch('book-structure.json');
-            if (response.ok) {
-                this.bookStructure = await response.json();
-                console.log('Loaded book structure from static file');
-                return;
-            }
-        } catch (error) {
-            console.log('Static book structure not found, trying API...');
-        }
-
-        try {
-            // Fallback to API if available (for local development)
-            const response = await fetch('/api/book-structure');
-            if (response.ok) {
-                this.bookStructure = await response.json();
-                console.log('Loaded book structure from API');
-                return;
-            }
-        } catch (error) {
-            console.log('API not available, using fallback...');
-        }
-
-        // Final fallback
-        this.bookStructure = await this.loadFallbackStructure();
+        console.log('Loading book structure from folder scanning...');
+        this.bookStructure = await this.scanBookDirectory();
     }
 
-    async loadFallbackStructure() {
-        try {
-            const response = await fetch('chapters/chapters.json');
-            if (response.ok) {
-                const chapters = await response.json();
-                return {
-                    title: "Economía Conversada",
-                    chapters: chapters
-                };
-            }
-        } catch (error) {
-            console.log('Fallback failed, using default structure');
-        }
-        
-        return {
+    async scanBookDirectory() {
+        const book = {
             title: "Economía Conversada",
-            chapters: await this.scanChaptersDirectory()
+            chapters: []
         };
+
+        // Define the structure based on your book1 folder
+        const chapterData = [
+            { id: 'C1', title: 'I', sections: 7 },
+            { id: 'C2', title: 'II', sections: 8 },
+            { id: 'C3', title: 'III', sections: 10 },
+            { id: 'C4', title: 'IV', sections: 11 },
+            { id: 'C5', title: 'V', sections: 5 },
+            { id: 'C6', title: 'VI', sections: 5 }
+        ];
+
+        for (const chapterInfo of chapterData) {
+            const chapter = {
+                id: chapterInfo.id,
+                title: await this.loadTitle(`book1/${chapterInfo.id}/title.txt`) || chapterInfo.title,
+                textFile: `book1/${chapterInfo.id}/chapter.txt`,
+                audioFile: await this.findAudioFile(`book1/${chapterInfo.id}/`),
+                sections: []
+            };
+
+            // Add sections
+            for (let s = 1; s <= chapterInfo.sections; s++) {
+                const sectionId = `S${s}`;
+                const section = {
+                    id: sectionId,
+                    title: await this.loadTitle(`book1/${chapterInfo.id}/${sectionId}/title.txt`) || `Sección ${s}`,
+                    textFile: `book1/${chapterInfo.id}/${sectionId}/main.txt`,
+                    audioFile: await this.findAudioFile(`book1/${chapterInfo.id}/${sectionId}/`),
+                    description: await this.loadDescription(`book1/${chapterInfo.id}/${sectionId}/description.txt`)
+                };
+                chapter.sections.push(section);
+            }
+
+            book.chapters.push(chapter);
+        }
+
+        return book;
     }
 
-    async scanChaptersDirectory() {
-        const chapters = [];
-        const chapterNumbers = [1, 2, 3, 4, 5]; // Default chapters, modify as needed
+    async loadTitle(filePath) {
+        try {
+            const response = await fetch(filePath);
+            if (response.ok) {
+                return (await response.text()).trim();
+            }
+        } catch (error) {
+            // File doesn't exist or can't be loaded
+        }
+        return null;
+    }
+
+    async loadDescription(filePath) {
+        try {
+            const response = await fetch(filePath);
+            if (response.ok) {
+                return (await response.text()).trim();
+            }
+        } catch (error) {
+            // File doesn't exist or can't be loaded
+        }
+        return null;
+    }
+
+    async findAudioFile(directoryPath) {
+        const audioExtensions = ['mp3', 'wav', 'ogg', 'm4a'];
         
-        for (let i of chapterNumbers) {
-            const chapterData = {
-                id: i,
-                title: `Capítulo ${i}`,
-                textFile: `chapters/capitulo${i}.txt`,
-                audioFile: `chapters/capitulo${i}.mp3`
-            };
-            chapters.push(chapterData);
+        for (const ext of audioExtensions) {
+            try {
+                const audioPath = `${directoryPath}audio.${ext}`;
+                const response = await fetch(audioPath, { method: 'HEAD' });
+                if (response.ok) {
+                    return audioPath;
+                }
+            } catch (error) {
+                // Continue to next extension
+            }
         }
         
-        return chapters;
+        // Try common naming patterns
+        const commonNames = ['section', 'chapter', 'main', '01', '1'];
+        for (const name of commonNames) {
+            for (const ext of audioExtensions) {
+                try {
+                    const audioPath = `${directoryPath}${name}.${ext}`;
+                    const response = await fetch(audioPath, { method: 'HEAD' });
+                    if (response.ok) {
+                        return audioPath;
+                    }
+                } catch (error) {
+                    // Continue to next combination
+                }
+            }
+        }
+        
+        return null;
     }
 
     renderNavigation() {
