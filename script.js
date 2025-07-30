@@ -16,23 +16,42 @@ class ChapterViewer {
         console.log('Loading book structure...');
         
         try {
-            // Try to load the static book structure first (works on both localhost and Vercel)
+            // Try to load the static book structure first
+            console.log('Attempting to load book-structure.json...');
             const response = await fetch('book-structure.json');
+            console.log('book-structure.json response status:', response.status);
+            
             if (response.ok) {
                 this.bookStructure = await response.json();
-                console.log('Loaded book structure from static file with', this.bookStructure.chapters.length, 'chapters');
+                console.log('✅ Loaded book structure from static file with', this.bookStructure.chapters.length, 'chapters');
                 return;
+            } else {
+                console.log('❌ book-structure.json returned status:', response.status);
             }
         } catch (error) {
-            console.log('Failed to load book-structure.json:', error);
+            console.log('❌ Failed to load book-structure.json:', error);
         }
 
-        // Fallback to hardcoded structure (should not be needed now)
-        console.log('Using fallback structure');
+        // More detailed fallback for debugging
+        console.log('🔄 Using fallback structure - this means book-structure.json is not deployed');
+        
+        // Provide a working fallback with at least some structure
         this.bookStructure = {
             title: "Economía Conversada",
-            chapters: []
+            chapters: [
+                {
+                    id: 'C1',
+                    title: 'I',
+                    textFile: 'book1/C1/chapter.txt',
+                    audioFile: null,
+                    sections: [
+                        { id: 'S1', title: '¿Qué es la Economía?', textFile: 'book1/C1/S1/main.txt', audioFile: null, description: 'En los jardines de la Academia, en Atenas, Sócrates y Glaucón pasean bajo la sombra de los olivos mientras conversan sobre la economía.' }
+                    ]
+                }
+            ]
         };
+        
+        console.log('Fallback structure loaded with', this.bookStructure.chapters.length, 'chapters');
     }
     async loadTitle(_) {
         return null;
@@ -367,12 +386,22 @@ class ChapterViewer {
             const content = document.getElementById('chapter-content');
             
             if (header && content) {
-                const headerHeight = header.offsetHeight;
-                const baseOffset = 20; // Small buffer space
-                const totalPadding = headerHeight + baseOffset;
+                // Check if we're on mobile (window width <= 768px)
+                const isMobile = window.innerWidth <= 768;
                 
-                content.style.paddingTop = `${totalPadding}px`;
-                console.log(`Adjusted content padding to ${totalPadding}px (header: ${headerHeight}px + buffer: ${baseOffset}px)`);
+                if (isMobile) {
+                    // On mobile, header is not fixed, so use minimal padding
+                    content.style.paddingTop = '40px';
+                    console.log('Mobile layout: Using base padding of 40px');
+                } else {
+                    // On desktop, header is fixed, so calculate dynamic padding
+                    const headerHeight = header.offsetHeight;
+                    const baseOffset = 20; // Small buffer space
+                    const totalPadding = headerHeight + baseOffset;
+                    
+                    content.style.paddingTop = `${totalPadding}px`;
+                    console.log(`Desktop layout: Adjusted content padding to ${totalPadding}px (header: ${headerHeight}px + buffer: ${baseOffset}px)`);
+                }
             }
         });
     }
