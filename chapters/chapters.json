@@ -1,0 +1,9 @@
+[
+    {
+        "id": 1,
+        "title": "Capítulo 1: Sección 1",
+        "textFile": "chapters/capitulo_i.txt",
+        "audioFile": "chapters/02_dialogue_Glaucon_Socrates.mp3"
+    }
+
+]
