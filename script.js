@@ -143,92 +143,22 @@ class ChapterViewer {
         return null;
     }
 
-    async findAllAudioFiles(folderPath, chapterId = null, sectionId = null) {
-        const audioExtensions = ['mp3', 'wav', 'ogg', 'm4a'];
-        const foundFiles = [];
-        
-        console.log(`Looking for audio files in ${folderPath}`);
-        
-        // Common patterns to try
-        const patterns = [];
-        
-        // If we have chapter and section info, try the specific pattern first
-        if (chapterId && sectionId) {
-            const chapterNum = chapterId.toLowerCase();
-            const sectionNum = sectionId.toLowerCase();
-            patterns.push(`${chapterNum}${sectionNum}`);
+    async findAllAudioFiles(folderPath) {
+    const manifestPath = `${folderPath}audio_manifest.json`;
+    try {
+        const resp = await fetch(manifestPath);
+        if (resp.ok) {
+        const list = await resp.json();
+        return list.map(fn => ({
+            path: folderPath + fn,
+            name: fn,
+            displayName: this.formatAudioName(fn)
+        }));
         }
-        
-        // Add common naming patterns
-        patterns.push(
-            'audio', 'section', 'main', 'track', 'sound', 'clip',
-            '01', '02', '03', '04', '05', '06', '07', '08', '09', '10',
-            '1', '2', '3', '4', '5', '6', '7', '8', '9', '10',
-            '11', '12', '13', '14', '15', '16', '17', '18', '19', '20',
-            'intro', 'outro', 'beginning', 'end', 'start', 'finish',
-            'chapter', 'part', 'segment', 'piece',
-            // Patterns with hyphens
-            '1-escena', '2-conversacion', '3-dialogo', '4-narracion', '5-resumen',
-            '1-scene', '2-conversation', '3-dialogue', '4-narration', '5-summary',
-            '1-intro', '2-main', '3-outro', '4-conclusion', '5-final'
-        );
-        
-        // Try all combinations of patterns and extensions
-        for (const pattern of patterns) {
-            for (const ext of audioExtensions) {
-                try {
-                    const audioPath = `${folderPath}${pattern}.${ext}`;
-                    const response = await fetch(audioPath, { method: 'HEAD' });
-                    if (response.ok) {
-                        const fileName = `${pattern}.${ext}`;
-                        console.log(`Found audio file: ${audioPath}`);
-                        foundFiles.push({
-                            path: audioPath,
-                            name: fileName,
-                            displayName: this.formatAudioName(fileName)
-                        });
-                    }
-                } catch (error) {
-                    // Continue to next combination
-                }
-            }
-        }
-        
-        // Try some additional patterns that might exist
-        const additionalPatterns = [
-            'description', 'dialogue', 'narration', 'voice', 'speech',
-            'summary', 'title', 'chapter_summary', 'section_title',
-            'chapter_summary_beginning', 'chapter_summary_end',
-            'location_description', 'Glaucón_Sócrates', 'Teofrasto_solo'
-        ];
-        
-        for (const pattern of additionalPatterns) {
-            for (const ext of audioExtensions) {
-                try {
-                    const audioPath = `${folderPath}${pattern}.${ext}`;
-                    const response = await fetch(audioPath, { method: 'HEAD' });
-                    if (response.ok) {
-                        const fileName = `${pattern}.${ext}`;
-                        // Check if we already found this file
-                        if (!foundFiles.some(f => f.path === audioPath)) {
-                            console.log(`Found additional audio file: ${audioPath}`);
-                            foundFiles.push({
-                                path: audioPath,
-                                name: fileName,
-                                displayName: this.formatAudioName(fileName)
-                            });
-                        }
-                    }
-                } catch (error) {
-                    // Continue to next combination
-                }
-            }
-        }
-        
-        console.log(`Found ${foundFiles.length} audio files in ${folderPath}`);
-        return foundFiles;
-    }
-    
+    } catch (_) { /* no manifest – fall back */ }
+
+    return this.guessAudioFiles(folderPath);   // old brute-force (see option 2)
+    }  
     formatAudioName(fileName) {
         // Remove extension
         let name = fileName.replace(/\.(mp3|wav|ogg|m4a)$/i, '');

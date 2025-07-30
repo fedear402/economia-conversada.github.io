@@ -11,35 +11,35 @@
           "id": "S1",
           "title": "¿Qué es la Economía?",
           "textFile": "book1/C1/S1/main.txt",
-          "audioFile": null,
+          "audioFile": "book1/C1/S1/2-conversacion.mp3",
           "description": "En los jardines de la Academia, en Atenas, Sócrates y Glaucón pasean bajo la sombra de los olivos mientras conversan sobre la economía."
         },
         {
           "id": "S2",
           "title": "La restricción presupuestaria",
           "textFile": "book1/C1/S2/main.txt",
-          "audioFile": null,
+          "audioFile": "book1/C1/S2/1-escena.wav",
           "description": "Bajo la luz tenue de la tarde, en los jardines de la Academia, Sócrates y Glaucón caminan entre los árboles. El aire es fresco. Glaucón parece sumido en sus pensamientos mientras Sócrates lo observa, esperando el momento justo para retomar la conversación."
         },
         {
           "id": "S3",
           "title": "La dotación inicial de recursos, la tecnología y la escasez",
           "textFile": "book1/C1/S3/main.txt",
-          "audioFile": null,
+          "audioFile": "book1/C1/S3/2-conversacion.mp3",
           "description": "Sócrates y Glaucón deambulan por la ladera de una loma que ofrece una vista panorámica de Atenas. Mientras observan los campos cultivados y a los trabajadores a lo lejos, la conversación se dirige hacia la naturaleza de los recursos y cómo las sociedades los utilizan."
         },
         {
           "id": "S4",
           "title": "La racionalidad de los agentes económicos",
           "textFile": "book1/C1/S4/main.txt",
-          "audioFile": null,
+          "audioFile": "book1/C1/S4/2-conversacion.mp3",
           "description": "En un rincón tranquilo de la Academia, Sócrates y Glaucón reflexionan sobre la racionalidad en las decisiones humanas, cuestionando si la lógica o las emociones guían nuestras acciones."
         },
         {
           "id": "S5",
           "title": "Los incentivos",
           "textFile": "book1/C1/S5/main.txt",
-          "audioFile": null,
+          "audioFile": "book1/C1/S5/2-conversacion.mp3",
           "description": "En una tarde apacible en el Ágora de Atenas, Sócrates y Glaucón observan, una vez más, cómo los comerciantes interactúan, vendiendo y comprando. En medio de la actividad del mercado, se disponen a conversar sobre el papel de los incentivos en la economía."
         },
         {
