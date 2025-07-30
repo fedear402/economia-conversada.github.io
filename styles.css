@@ -40,7 +40,7 @@ body {
 }
 
 .sidebar nav li {
-    margin-bottom: 10px;
+    margin-bottom: 5px;
 }
 
 .sidebar nav a {
@@ -63,15 +63,96 @@ body {
     color: white;
 }
 
+/* Hierarchical navigation styles */
+.book-navigation {
+    list-style: none;
+}
+
+.chapter-item {
+    margin-bottom: 15px;
+    border-left: 3px solid #ecf0f1;
+    padding-left: 0;
+}
+
+.chapter-link {
+    font-weight: 600;
+    font-size: 1em;
+    color: #2c3e50;
+    background-color: #f8f9fa;
+    border: 1px solid #e9ecef;
+    position: relative;
+}
+
+.chapter-link:hover {
+    background-color: #e9ecef;
+    color: #2c3e50;
+}
+
+.chapter-link.active {
+    background-color: #3498db;
+    color: white;
+    border-color: #3498db;
+}
+
+.chapter-link.expanded::after {
+    content: "−";
+    position: absolute;
+    right: 12px;
+    font-weight: bold;
+}
+
+.chapter-link:not(.expanded)::after {
+    content: "+";
+    position: absolute;
+    right: 12px;
+    font-weight: bold;
+}
+
+.sections-list {
+    list-style: none;
+    margin-top: 8px;
+    padding-left: 0;
+    display: none;
+    border-left: 2px solid #dee2e6;
+    margin-left: 15px;
+}
+
+.section-item {
+    margin-bottom: 2px;
+}
+
+.section-link {
+    padding: 6px 12px;
+    font-size: 0.9em;
+    color: #666;
+    background-color: #fdfdfd;
+    border: 1px solid #f1f3f4;
+    border-left: 3px solid #dee2e6;
+    font-weight: normal;
+}
+
+.section-link:hover {
+    background-color: #f8f9fa;
+    color: #495057;
+    border-left-color: #6c757d;
+}
+
+.section-link.active {
+    background-color: #e3f2fd;
+    color: #1976d2;
+    border-left-color: #2196f3;
+    font-weight: 500;
+}
+
 .content {
     flex: 1;
     margin-left: 250px;
     padding: 20px;
     max-width: 800px;
-    padding-top: 120px; /* Space for fixed header */
+    padding-top: 180px; /* Increased space for fixed header */
 }
 
-.chapter-header {
+.chapter-header, .section-header {
     position: fixed;
     top: 0;
     left: 250px;
@@ -86,12 +167,44 @@ body {
     margin: 0;
 }
 
-.chapter-title {
+.chapter-title, .section-title {
     font-size: 1.8em;
     color: #2c3e50;
     margin-bottom: 15px;
     border-bottom: 2px solid #3498db;
     padding-bottom: 10px;
+}
+
+.section-title {
+    font-size: 1.5em;
+}
+
+.breadcrumb {
+    font-size: 0.9em;
+    color: #666;
+    margin-bottom: 10px;
+    padding: 8px 0;
+    border-bottom: 1px solid #eee;
+}
+
+.breadcrumb-link {
+    color: #3498db;
+    text-decoration: none;
+}
+
+.breadcrumb-link:hover {
+    text-decoration: underline;
+}
+
+.section-description {
+    font-size: 0.95em;
+    color: #666;
+    font-style: italic;
+    margin-bottom: 15px;
+    padding: 10px;
+    background-color: #f8f9fa;
+    border-left: 4px solid #dee2e6;
+    border-radius: 0 4px 4px 0;
 }
 
 .audio-player {
@@ -104,7 +217,7 @@ body {
     outline: none;
 }
 
-.chapter-text {
+.chapter-text, .section-text {
     background-color: #fff;
     border: 1px solid #ddd;
     border-radius: 6px;
@@ -114,7 +227,7 @@ body {
     font-size: 1.1em;
 }
 
-.chapter-text p {
+.chapter-text p, .section-text p {
     margin-bottom: 15px;
     text-align: justify;
 }
