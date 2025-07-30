@@ -15,119 +15,26 @@ class ChapterViewer {
     async loadBookStructure() {
         console.log('Loading book structure...');
         
-        // Base structure with dynamic title/description loading
-        this.bookStructure = {
-            title: "Economía Conversada",
-            chapters: [
-                {
-                    id: 'C1',
-                    title: 'I',
-                    textFile: 'book1/C1/chapter.txt',
-                    audioFile: null,
-                    sections: [
-                        { id: 'S1', title: 'Sección 1', textFile: 'book1/C1/S1/main.txt', audioFile: null, description: null },
-                        { id: 'S2', title: 'Sección 2', textFile: 'book1/C1/S2/main.txt', audioFile: null, description: null },
-                        { id: 'S3', title: 'Sección 3', textFile: 'book1/C1/S3/main.txt', audioFile: null, description: null },
-                        { id: 'S4', title: 'Sección 4', textFile: 'book1/C1/S4/main.txt', audioFile: null, description: null },
-                        { id: 'S5', title: 'Sección 5', textFile: 'book1/C1/S5/main.txt', audioFile: null, description: null },
-                        { id: 'S6', title: 'Sección 6', textFile: 'book1/C1/S6/main.txt', audioFile: null, description: null },
-                        { id: 'S7', title: 'Sección 7', textFile: 'book1/C1/S7/main.txt', audioFile: null, description: null }
-                    ]
-                },
-                {
-                    id: 'C2',
-                    title: 'II',
-                    textFile: 'book1/C2/chapter.txt',
-                    audioFile: null,
-                    sections: [
-                        { id: 'S1', title: 'Sección 1', textFile: 'book1/C2/S1/main.txt', audioFile: null, description: null },
-                        { id: 'S2', title: 'Sección 2', textFile: 'book1/C2/S2/main.txt', audioFile: null, description: null },
-                        { id: 'S3', title: 'Sección 3', textFile: 'book1/C2/S3/main.txt', audioFile: null, description: null },
-                        { id: 'S4', title: 'Sección 4', textFile: 'book1/C2/S4/main.txt', audioFile: null, description: null },
-                        { id: 'S5', title: 'Sección 5', textFile: 'book1/C2/S5/main.txt', audioFile: null, description: null },
-                        { id: 'S6', title: 'Sección 6', textFile: 'book1/C2/S6/main.txt', audioFile: null, description: null },
-                        { id: 'S7', title: 'Sección 7', textFile: 'book1/C2/S7/main.txt', audioFile: null, description: null },
-                        { id: 'S8', title: 'Sección 8', textFile: 'book1/C2/S8/main.txt', audioFile: null, description: null }
-                    ]
-                },
-                {
-                    id: 'C3',
-                    title: 'III',
-                    textFile: 'book1/C3/chapter.txt',
-                    audioFile: null,
-                    sections: [
-                        { id: 'S1', title: 'Sección 1', textFile: 'book1/C3/S1/main.txt', audioFile: null, description: null },
-                        { id: 'S2', title: 'Sección 2', textFile: 'book1/C3/S2/main.txt', audioFile: null, description: null },
-                        { id: 'S3', title: 'Sección 3', textFile: 'book1/C3/S3/main.txt', audioFile: null, description: null },
-                        { id: 'S4', title: 'Sección 4', textFile: 'book1/C3/S4/main.txt', audioFile: null, description: null },
-                        { id: 'S5', title: 'Sección 5', textFile: 'book1/C3/S5/main.txt', audioFile: null, description: null },
-                        { id: 'S6', title: 'Sección 6', textFile: 'book1/C3/S6/main.txt', audioFile: null, description: null },
-                        { id: 'S7', title: 'Sección 7', textFile: 'book1/C3/S7/main.txt', audioFile: null, description: null },
-                        { id: 'S8', title: 'Sección 8', textFile: 'book1/C3/S8/main.txt', audioFile: null, description: null },
-                        { id: 'S9', title: 'Sección 9', textFile: 'book1/C3/S9/main.txt', audioFile: null, description: null },
-                        { id: 'S10', title: 'Sección 10', textFile: 'book1/C3/S10/main.txt', audioFile: null, description: null }
-                    ]
-                },
-                {
-                    id: 'C4',
-                    title: 'IV',
-                    textFile: 'book1/C4/chapter.txt',
-                    audioFile: null,
-                    sections: [
-                        { id: 'S1', title: 'Sección 1', textFile: 'book1/C4/S1/main.txt', audioFile: null, description: null },
-                        { id: 'S2', title: 'Sección 2', textFile: 'book1/C4/S2/main.txt', audioFile: null, description: null },
-                        { id: 'S3', title: 'Sección 3', textFile: 'book1/C4/S3/main.txt', audioFile: null, description: null },
-                        { id: 'S4', title: 'Sección 4', textFile: 'book1/C4/S4/main.txt', audioFile: null, description: null },
-                        { id: 'S5', title: 'Sección 5', textFile: 'book1/C4/S5/main.txt', audioFile: null, description: null },
-                        { id: 'S6', title: 'Sección 6', textFile: 'book1/C4/S6/main.txt', audioFile: null, description: null },
-                        { id: 'S7', title: 'Sección 7', textFile: 'book1/C4/S7/main.txt', audioFile: null, description: null },
-                        { id: 'S8', title: 'Sección 8', textFile: 'book1/C4/S8/main.txt', audioFile: null, description: null },
-                        { id: 'S9', title: 'Sección 9', textFile: 'book1/C4/S9/main.txt', audioFile: null, description: null },
-                        { id: 'S10', title: 'Sección 10', textFile: 'book1/C4/S10/main.txt', audioFile: null, description: null },
-                        { id: 'S11', title: 'Sección 11', textFile: 'book1/C4/S11/main.txt', audioFile: null, description: null }
-                    ]
-                },
-                {
-                    id: 'C5',
-                    title: 'V',
-                    textFile: 'book1/C5/chapter.txt',
-                    audioFile: null,
-                    sections: [
-                        { id: 'S1', title: 'Sección 1', textFile: 'book1/C5/S1/main.txt', audioFile: null, description: null },
-                        { id: 'S2', title: 'Sección 2', textFile: 'book1/C5/S2/main.txt', audioFile: null, description: null },
-                        { id: 'S3', title: 'Sección 3', textFile: 'book1/C5/S3/main.txt', audioFile: null, description: null },
-                        { id: 'S4', title: 'Sección 4', textFile: 'book1/C5/S4/main.txt', audioFile: null, description: null },
-                        { id: 'S5', title: 'Sección 5', textFile: 'book1/C5/S5/main.txt', audioFile: null, description: null }
-                    ]
-                },
-                {
-                    id: 'C6',
-                    title: 'VI',
-                    textFile: 'book1/C6/chapter.txt',
-                    audioFile: null,
-                    sections: [
-                        { id: 'S1', title: 'Sección 1', textFile: 'book1/C6/S1/main.txt', audioFile: null, description: null },
-                        { id: 'S2', title: 'Sección 2', textFile: 'book1/C6/S2/main.txt', audioFile: null, description: null },
-                        { id: 'S3', title: 'Sección 3', textFile: 'book1/C6/S3/main.txt', audioFile: null, description: null },
-                        { id: 'S4', title: 'Sección 4', textFile: 'book1/C6/S4/main.txt', audioFile: null, description: null },
-                        { id: 'S5', title: 'Sección 5', textFile: 'book1/C6/S5/main.txt', audioFile: null, description: null }
-                    ]
-                }
-            ]
-        };
-        
-        console.log('Book structure loaded with', this.bookStructure.chapters.length, 'chapters');
-    }
-
-    async loadTitle(filePath) {
         try {
-            const response = await fetch(filePath);
+            // Try to load the static book structure first (works on both localhost and Vercel)
+            const response = await fetch('book-structure.json');
             if (response.ok) {
-                return (await response.text()).trim();
+                this.bookStructure = await response.json();
+                console.log('Loaded book structure from static file with', this.bookStructure.chapters.length, 'chapters');
+                return;
             }
         } catch (error) {
-            console.log(`Could not load title from ${filePath}`);
+            console.log('Failed to load book-structure.json:', error);
         }
+
+        // Fallback to hardcoded structure (should not be needed now)
+        console.log('Using fallback structure');
+        this.bookStructure = {
+            title: "Economía Conversada",
+            chapters: []
+        };
+    }
+    async loadTitle(_) {
         return null;
     }
 
@@ -215,17 +122,14 @@ class ChapterViewer {
         const ul = document.createElement('ul');
         ul.className = 'book-navigation';
         
-        for (const chapter of this.bookStructure.chapters) {
+        // Use titles directly from book-structure.json (fast, no HTTP requests)
+        this.bookStructure.chapters.forEach(chapter => {
             const chapterLi = document.createElement('li');
             chapterLi.className = 'chapter-item';
             
-            // Load actual chapter title
-            const chapterTitlePath = `book1/${chapter.id}/title.txt`;
-            const actualChapterTitle = await this.loadTitle(chapterTitlePath) || chapter.title;
-            
             const chapterLink = document.createElement('a');
             chapterLink.href = '#';
-            chapterLink.textContent = actualChapterTitle;
+            chapterLink.textContent = chapter.title; // Use pre-loaded title
             chapterLink.className = 'chapter-link';
             chapterLink.onclick = (e) => {
                 e.preventDefault();
@@ -239,17 +143,13 @@ class ChapterViewer {
                 const sectionsUl = document.createElement('ul');
                 sectionsUl.className = 'sections-list';
                 
-                for (const section of chapter.sections) {
+                chapter.sections.forEach(section => {
                     const sectionLi = document.createElement('li');
                     sectionLi.className = 'section-item';
                     
-                    // Load actual section title
-                    const sectionTitlePath = `book1/${chapter.id}/${section.id}/title.txt`;
-                    const actualSectionTitle = await this.loadTitle(sectionTitlePath) || section.title;
-                    
                     const sectionLink = document.createElement('a');
                     sectionLink.href = '#';
-                    sectionLink.textContent = actualSectionTitle;
+                    sectionLink.textContent = section.title; // Use pre-loaded title
                     sectionLink.className = 'section-link';
                     sectionLink.onclick = (e) => {
                         e.preventDefault();
@@ -258,13 +158,13 @@ class ChapterViewer {
                     
                     sectionLi.appendChild(sectionLink);
                     sectionsUl.appendChild(sectionLi);
-                }
+                });
                 
                 chapterLi.appendChild(sectionsUl);
             }
             
             ul.appendChild(chapterLi);
-        }
+        });
         
         nav.appendChild(ul);
     }
@@ -294,17 +194,13 @@ class ChapterViewer {
             
             const text = await response.text();
             
-            // Load the actual title and audio for this chapter
-            const titlePath = `book1/${chapter.id}/title.txt`;
+            // Load audio files using your audio manifest approach
             const audioFolderPath = `book1/${chapter.id}/`;
+            const audioFiles = await this.findAllAudioFiles(audioFolderPath);
             
-            const actualTitle = await this.loadTitle(titlePath) || chapter.title;
-            const audioFiles = await this.findAllAudioFiles(audioFolderPath, chapter.id);
-            
-            // Create an enhanced chapter object with loaded data
+            // Use the chapter data directly from book-structure.json (no additional loading)
             const enhancedChapter = {
                 ...chapter,
-                title: actualTitle,
                 audioFiles: audioFiles
             };
             
@@ -331,20 +227,13 @@ class ChapterViewer {
             
             const text = await response.text();
             
-            // Load the actual title and description for this section
-            const titlePath = `book1/${chapter.id}/${section.id}/title.txt`;
-            const descriptionPath = `book1/${chapter.id}/${section.id}/description.txt`;
+            // Load audio files using your audio manifest approach
             const audioFolderPath = `book1/${chapter.id}/${section.id}/`;
+            const audioFiles = await this.findAllAudioFiles(audioFolderPath);
             
-            const actualTitle = await this.loadTitle(titlePath) || section.title;
-            const actualDescription = await this.loadDescription(descriptionPath);
-            const audioFiles = await this.findAllAudioFiles(audioFolderPath, chapter.id, section.id);
-            
-            // Create an enhanced section object with loaded data
+            // Use the section data directly from book-structure.json (includes title and description)
             const enhancedSection = {
                 ...section,
-                title: actualTitle,
-                description: actualDescription,
                 audioFiles: audioFiles
             };
             
