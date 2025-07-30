@@ -8,6 +8,7 @@ class ChapterViewer {
 
     async init() {
         await this.loadBookStructure();
+        console.log('Book structure loaded:', this.bookStructure);
         this.renderNavigation();
     }
 
@@ -17,6 +18,8 @@ class ChapterViewer {
     }
 
     async scanBookDirectory() {
+        console.log('Scanning book directory...');
+        
         const book = {
             title: "Economía Conversada",
             chapters: []
@@ -33,6 +36,8 @@ class ChapterViewer {
         ];
 
         for (const chapterInfo of chapterData) {
+            console.log(`Processing chapter ${chapterInfo.id}...`);
+            
             const chapter = {
                 id: chapterInfo.id,
                 title: await this.loadTitle(`book1/${chapterInfo.id}/title.txt`) || chapterInfo.title,
@@ -55,8 +60,10 @@ class ChapterViewer {
             }
 
             book.chapters.push(chapter);
+            console.log(`Added chapter ${chapterInfo.id} with ${chapter.sections.length} sections`);
         }
 
+        console.log('Book structure complete:', book);
         return book;
     }
 
