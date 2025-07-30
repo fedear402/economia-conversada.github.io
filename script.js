@@ -9,13 +9,13 @@ class ChapterViewer {
     async init() {
         await this.loadBookStructure();
         console.log('Book structure loaded:', this.bookStructure);
-        this.renderNavigation();
+        await this.renderNavigation();
     }
 
     async loadBookStructure() {
         console.log('Loading book structure...');
         
-        // Simple hardcoded structure that will always work
+        // Base structure with dynamic title/description loading
         this.bookStructure = {
             title: "Economía Conversada",
             chapters: [
@@ -119,8 +119,32 @@ class ChapterViewer {
         console.log('Book structure loaded with', this.bookStructure.chapters.length, 'chapters');
     }
 
+    async loadTitle(filePath) {
+        try {
+            const response = await fetch(filePath);
+            if (response.ok) {
+                return (await response.text()).trim();
+            }
+        } catch (error) {
+            console.log(`Could not load title from ${filePath}`);
+        }
+        return null;
+    }
 
-    renderNavigation() {
+    async loadDescription(filePath) {
+        try {
+            const response = await fetch(filePath);
+            if (response.ok) {
+                return (await response.text()).trim();
+            }
+        } catch (error) {
+            console.log(`Could not load description from ${filePath}`);
+        }
+        return null;
+    }
+
+
+    async renderNavigation() {
         const nav = document.getElementById('chapter-nav');
         nav.innerHTML = '';
         
@@ -132,13 +156,17 @@ class ChapterViewer {
         const ul = document.createElement('ul');
         ul.className = 'book-navigation';
         
-        this.bookStructure.chapters.forEach(chapter => {
+        for (const chapter of this.bookStructure.chapters) {
             const chapterLi = document.createElement('li');
             chapterLi.className = 'chapter-item';
             
+            // Load actual chapter title
+            const chapterTitlePath = `book1/${chapter.id}/title.txt`;
+            const actualChapterTitle = await this.loadTitle(chapterTitlePath) || chapter.title;
+            
             const chapterLink = document.createElement('a');
             chapterLink.href = '#';
-            chapterLink.textContent = chapter.title;
+            chapterLink.textContent = actualChapterTitle;
             chapterLink.className = 'chapter-link';
             chapterLink.onclick = (e) => {
                 e.preventDefault();
@@ -152,13 +180,17 @@ class ChapterViewer {
                 const sectionsUl = document.createElement('ul');
                 sectionsUl.className = 'sections-list';
                 
-                chapter.sections.forEach(section => {
+                for (const section of chapter.sections) {
                     const sectionLi = document.createElement('li');
                     sectionLi.className = 'section-item';
                     
+                    // Load actual section title
+                    const sectionTitlePath = `book1/${chapter.id}/${section.id}/title.txt`;
+                    const actualSectionTitle = await this.loadTitle(sectionTitlePath) || section.title;
+                    
                     const sectionLink = document.createElement('a');
                     sectionLink.href = '#';
-                    sectionLink.textContent = section.title;
+                    sectionLink.textContent = actualSectionTitle;
                     sectionLink.className = 'section-link';
                     sectionLink.onclick = (e) => {
                         e.preventDefault();
@@ -167,13 +199,13 @@ class ChapterViewer {
                     
                     sectionLi.appendChild(sectionLink);
                     sectionsUl.appendChild(sectionLi);
-                });
+                }
                 
                 chapterLi.appendChild(sectionsUl);
             }
             
             ul.appendChild(chapterLi);
-        });
+        }
         
         nav.appendChild(ul);
     }
@@ -202,8 +234,19 @@ class ChapterViewer {
             }
             
             const text = await response.text();
-            this.renderContent(chapter, text, 'chapter');
-            this.currentChapter = chapter;
+            
+            // Load the actual title for this chapter
+            const titlePath = `book1/${chapter.id}/title.txt`;
+            const actualTitle = await this.loadTitle(titlePath) || chapter.title;
+            
+            // Create an enhanced chapter object with loaded data
+            const enhancedChapter = {
+                ...chapter,
+                title: actualTitle
+            };
+            
+            this.renderContent(enhancedChapter, text, 'chapter');
+            this.currentChapter = enhancedChapter;
             this.currentSection = null;
         } catch (error) {
             console.error('Error loading chapter:', error);
@@ -224,9 +267,24 @@ class ChapterViewer {
             }
             
             const text = await response.text();
-            this.renderContent(section, text, 'section', chapter);
+            
+            // Load the actual title and description for this section
+            const titlePath = `book1/${chapter.id}/${section.id}/title.txt`;
+            const descriptionPath = `book1/${chapter.id}/${section.id}/description.txt`;
+            
+            const actualTitle = await this.loadTitle(titlePath) || section.title;
+            const actualDescription = await this.loadDescription(descriptionPath);
+            
+            // Create an enhanced section object with loaded data
+            const enhancedSection = {
+                ...section,
+                title: actualTitle,
+                description: actualDescription
+            };
+            
+            this.renderContent(enhancedSection, text, 'section', chapter);
             this.currentChapter = chapter;
-            this.currentSection = section;
+            this.currentSection = enhancedSection;
         } catch (error) {
             console.error('Error loading section:', error);
             this.renderError(section, 'section', chapter);
