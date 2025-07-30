@@ -13,16 +13,31 @@ class ChapterViewer {
 
     async loadBookStructure() {
         try {
+            // Try to load the static book structure first
+            const response = await fetch('book-structure.json');
+            if (response.ok) {
+                this.bookStructure = await response.json();
+                console.log('Loaded book structure from static file');
+                return;
+            }
+        } catch (error) {
+            console.log('Static book structure not found, trying API...');
+        }
+
+        try {
+            // Fallback to API if available (for local development)
             const response = await fetch('/api/book-structure');
             if (response.ok) {
                 this.bookStructure = await response.json();
-            } else {
-                this.bookStructure = await this.loadFallbackStructure();
+                console.log('Loaded book structure from API');
+                return;
             }
         } catch (error) {
-            console.log('Loading from API failed, using fallback...');
-            this.bookStructure = await this.loadFallbackStructure();
+            console.log('API not available, using fallback...');
         }
+
+        // Final fallback
+        this.bookStructure = await this.loadFallbackStructure();
     }
 
     async loadFallbackStructure() {
