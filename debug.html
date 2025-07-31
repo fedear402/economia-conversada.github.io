@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Audio Manifests</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .debug-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; }
+        .audio-file { 
+            display: inline-block; 
+            margin: 2px; 
+            padding: 4px 8px; 
+            background: #f0f0f0; 
+            border-radius: 3px; 
+            font-family: monospace;
+        }
+        pre { background: #f8f8f8; padding: 10px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>Debug: Audio Manifest Loading</h1>
+    
+    <div class="debug-section">
+        <h2>Test Direct Manifest Loading</h2>
+        <button onclick="testManifestLoading()">Load Audio Manifests</button>
+        <div id="manifest-results"></div>
+    </div>
+
+    <div class="debug-section">
+        <h2>Test Chapter Viewer Audio Loading</h2>
+        <button onclick="testChapterViewer()">Initialize Chapter Viewer</button>
+        <div id="viewer-results"></div>
+    </div>
+
+    <script src="script.js"></script>
+    <script>
+        async function testManifestLoading() {
+            const results = document.getElementById('manifest-results');
+            results.innerHTML = '<p>Loading...</p>';
+            
+            const testPaths = [
+                'book1/C1/S1/',
+                'book1/C5/S1/', 
+                'book1/C6/S2/',
+                'book1/C4/S7/'
+            ];
+            
+            let html = '<h3>Direct manifest loading test:</h3>';
+            
+            for (const path of testPaths) {
+                try {
+                    const manifestPath = `${path}audio_manifest.json`;
+                    const response = await fetch(manifestPath);
+                    if (response.ok) {
+                        const manifest = await response.json();
+                        html += `<p><strong>${path}:</strong> `;
+                        if (manifest.length > 0) {
+                            manifest.forEach(file => {
+                                html += `<span class="audio-file">${file}</span> `;
+                            });
+                        } else {
+                            html += '<em>No files</em>';
+                        }
+                        html += '</p>';
+                    } else {
+                        html += `<p><strong>${path}:</strong> <em>HTTP ${response.status}</em></p>`;
+                    }
+                } catch (error) {
+                    html += `<p><strong>${path}:</strong> <em>Error: ${error.message}</em></p>`;
+                }
+            }
+            
+            results.innerHTML = html;
+        }
+        
+        let viewer = null;
+        
+        async function testChapterViewer() {
+            const results = document.getElementById('viewer-results');
+            results.innerHTML = '<p>Initializing ChapterViewer...</p>';
+            
+            try {
+                viewer = new ChapterViewer();
+                
+                // Wait a bit for initialization
+                await new Promise(resolve => setTimeout(resolve, 2000));
+                
+                let html = '<h3>ChapterViewer audio manifest data:</h3>';
+                html += '<pre>' + JSON.stringify(viewer.audioManifestData, null, 2) + '</pre>';
+                
+                html += '<h3>Book structure chapters:</h3>';
+                if (viewer.bookStructure && viewer.bookStructure.chapters) {
+                    viewer.bookStructure.chapters.forEach(chapter => {
+                        html += `<p><strong>${chapter.id}</strong>: ${chapter.title} (${chapter.sections ? chapter.sections.length : 0} sections)</p>`;
+                    });
+                } else {
+                    html += '<p>Book structure not loaded</p>';
+                }
+                
+                results.innerHTML = html;
+                
+            } catch (error) {
+                results.innerHTML = `<p>Error: ${error.message}</p><pre>${error.stack}</pre>`;
+            }
+        }
+    </script>
+</body>
+</html>

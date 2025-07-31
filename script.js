@@ -3,6 +3,7 @@ class ChapterViewer {
         this.bookStructure = null;
         this.currentChapter = null;
         this.currentSection = null;
+        this.audioManifestData = {}; // Cache for audio manifest data
         this.init();
     }
 
@@ -10,6 +11,7 @@ class ChapterViewer {
         await this.loadBookStructure();
         console.log('Book structure loaded:', this.bookStructure);
         await this.renderNavigation();
+        await this.loadAllAudioManifests();
     }
 
     async loadBookStructure() {
@@ -141,6 +143,22 @@ class ChapterViewer {
         const ul = document.createElement('ul');
         ul.className = 'book-navigation';
         
+        // Add To-Do item at the top
+        const todoLi = document.createElement('li');
+        todoLi.className = 'chapter-item';
+        
+        const todoLink = document.createElement('a');
+        todoLink.href = '#';
+        todoLink.textContent = 'To-Do';
+        todoLink.className = 'chapter-link';
+        todoLink.onclick = (e) => {
+            e.preventDefault();
+            this.loadTodoView();
+        };
+        
+        todoLi.appendChild(todoLink);
+        ul.appendChild(todoLi);
+        
         // Use titles directly from book-structure.json (fast, no HTTP requests)
         this.bookStructure.chapters.forEach(chapter => {
             const chapterLi = document.createElement('li');
@@ -267,6 +285,10 @@ class ChapterViewer {
 
     renderContent(item, text, type = 'chapter', parentChapter = null) {
         const content = document.getElementById('chapter-content');
+        const contentContainer = content.parentElement; // .content element
+        
+        // Remove todo-view class when loading regular content
+        contentContainer.classList.remove('todo-view');
         
         const header = document.createElement('div');
         header.className = `${type}-header`;
@@ -406,8 +428,278 @@ class ChapterViewer {
         });
     }
 
+    // To-Do content view functionality
+    async loadTodoView() {
+        try {
+            // Update active nav item
+            document.querySelectorAll('.sidebar nav a').forEach(a => a.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            await this.renderTodoContent();
+            this.currentChapter = null;
+            this.currentSection = null;
+        } catch (error) {
+            console.error('Error loading To-Do view:', error);
+            this.renderTodoError();
+        }
+    }
+
+    async renderTodoContent() {
+        const content = document.getElementById('chapter-content');
+        const contentContainer = content.parentElement; // .content element
+        
+        // Add class to make content wider
+        contentContainer.classList.add('todo-view');
+        
+        const todoView = document.createElement('div');
+        todoView.className = 'todo-content-view';
+        
+        const title = document.createElement('h1');
+        title.className = 'todo-title-main';
+        title.textContent = 'To-Do: Archivos de Audio';
+        todoView.appendChild(title);
+        
+        const description = document.createElement('div');
+        description.className = 'todo-description';
+        description.innerHTML = `
+            <p>Esta tabla muestra todos los archivos de audio disponibles organizados por sección y capítulo. 
+            Cada celda contiene los nombres de los archivos de audio que existen en esa combinación específica.</p>
+            <p><strong>Filas:</strong> Secciones (S1, S2, S3, etc.) | <strong>Columnas:</strong> Capítulos (I, II, III, etc.)</p>
+            <button onclick="location.reload();" style="margin-top: 10px; padding: 5px 10px; background: #3498db; color: white; border: none; border-radius: 3px; cursor: pointer;">🔄 Recargar página si la tabla está vacía</button>
+        `;
+        todoView.appendChild(description);
+        
+        const tableContainer = document.createElement('div');
+        tableContainer.className = 'todo-table-container';
+        
+        // Add loading message
+        const loadingMsg = document.createElement('div');
+        loadingMsg.style.textAlign = 'center';
+        loadingMsg.style.padding = '20px';
+        loadingMsg.style.color = '#666';
+        loadingMsg.textContent = 'Cargando archivos de audio...';
+        tableContainer.appendChild(loadingMsg);
+        
+        todoView.appendChild(tableContainer);
+        
+        content.innerHTML = '';
+        content.appendChild(todoView);
+        
+        // Ensure audio manifests are loaded before populating table
+        if (Object.keys(this.audioManifestData).length === 0) {
+            console.log('Audio manifest data not loaded, loading now...');
+            await this.loadAllAudioManifests();
+        }
+        
+        // Create and populate the table
+        const table = document.createElement('table');
+        table.className = 'audio-todo-table';
+        
+        // Create table structure
+        const thead = document.createElement('thead');
+        const tbody = document.createElement('tbody');
+        
+        const headerRow = document.createElement('tr');
+        const sectionHeaderCell = document.createElement('th');
+        sectionHeaderCell.className = 'section-header-cell';
+        sectionHeaderCell.textContent = 'Sección';
+        headerRow.appendChild(sectionHeaderCell);
+        
+        thead.appendChild(headerRow);
+        table.appendChild(thead);
+        table.appendChild(tbody);
+        
+        // Replace loading message with table
+        tableContainer.innerHTML = '';
+        tableContainer.appendChild(table);
+        
+        // Populate the table with data
+        this.populateTodoTable(table);
+    }
+
+    populateTodoTable(table) {
+        const thead = table.querySelector('thead tr');
+        const tbody = table.querySelector('tbody');
+        
+        if (!this.bookStructure) {
+            tbody.innerHTML = '<tr><td colspan="100%">No se pudo cargar la estructura del libro</td></tr>';
+            return;
+        }
+
+        console.log('Populating To-Do table with audio manifest data:', this.audioManifestData);
+        console.log('Book structure chapters:', this.bookStructure.chapters.length);
+
+        // Add chapter headers
+        this.bookStructure.chapters.forEach(chapter => {
+            const th = document.createElement('th');
+            th.textContent = chapter.title;
+            th.title = `Capítulo ${chapter.title}`;
+            thead.appendChild(th);
+        });
+
+        // Find the maximum number of sections across all chapters
+        const maxSections = Math.max(...this.bookStructure.chapters.map(ch => 
+            ch.sections ? ch.sections.length : 0
+        ));
+
+        // Create rows for each section number
+        for (let i = 1; i <= maxSections; i++) {
+            const row = document.createElement('tr');
+            
+            // Section name cell
+            const sectionCell = document.createElement('td');
+            sectionCell.className = 'section-name-cell';
+            sectionCell.textContent = `S${i}`;
+            sectionCell.title = `Sección ${i}`;
+            row.appendChild(sectionCell);
+
+            // Create cells for each chapter
+            this.bookStructure.chapters.forEach(chapter => {
+                const cell = document.createElement('td');
+                cell.className = 'audio-files-cell';
+                
+                // Check if this chapter has this section
+                const section = chapter.sections && chapter.sections.find(s => s.id === `S${i}`);
+                
+                if (section) {
+                    const audioFiles = this.audioManifestData[`${chapter.id}-S${i}`] || [];
+                    console.log(`${chapter.id}-S${i}: Found ${audioFiles.length} audio files:`, audioFiles);
+                    
+                    if (audioFiles.length > 0) {
+                        // Create individual clickable spans for each audio file
+                        audioFiles.forEach(fileName => {
+                            const fileSpan = document.createElement('span');
+                            fileSpan.className = 'audio-file-item';
+                            fileSpan.textContent = fileName;
+                            fileSpan.title = `Haz clic para ir a ${section.title} - ${fileName}`;
+                            
+                            // Add click handler to navigate to the section
+                            fileSpan.onclick = (e) => {
+                                e.preventDefault();
+                                this.navigateToSectionFromTodo(chapter, section);
+                            };
+                            
+                            cell.appendChild(fileSpan);
+                        });
+                    } else {
+                        cell.textContent = '—';
+                        cell.className += ' empty';
+                        cell.title = 'No hay archivos de audio';
+                    }
+                } else {
+                    // Section doesn't exist for this chapter
+                    cell.textContent = '—';
+                    cell.className += ' empty';
+                    cell.title = 'Sección no existe';
+                }
+                
+                row.appendChild(cell);
+            });
+
+            tbody.appendChild(row);
+        }
+
+        // Add summary info
+        const totalAudioFiles = Object.values(this.audioManifestData).reduce((sum, files) => sum + files.length, 0);
+        const statusDiv = document.createElement('div');
+        statusDiv.style.textAlign = 'center';
+        statusDiv.style.padding = '10px';
+        statusDiv.style.color = '#666';
+        statusDiv.style.fontSize = '0.9em';
+        statusDiv.innerHTML = `📊 Total: ${totalAudioFiles} archivos de audio encontrados en ${maxSections} secciones y ${this.bookStructure.chapters.length} capítulos`;
+        
+        // Insert after table
+        table.parentElement.appendChild(statusDiv);
+
+        console.log(`To-Do table rendered with ${maxSections} section rows and ${this.bookStructure.chapters.length} chapter columns`);
+        console.log(`Total audio files loaded: ${totalAudioFiles}`);
+    }
+
+    navigateToSectionFromTodo(chapter, section) {
+        console.log(`Navigating from To-Do to ${chapter.id}-${section.id}: ${section.title}`);
+        
+        // Update active nav item - remove active from To-Do and add to the section
+        document.querySelectorAll('.sidebar nav a').forEach(a => a.classList.remove('active'));
+        
+        // Find and activate the corresponding section link in the sidebar
+        const sectionLinks = document.querySelectorAll('.section-link');
+        sectionLinks.forEach(link => {
+            if (link.textContent.trim() === section.title) {
+                link.classList.add('active');
+                // Also expand the chapter if it's collapsed
+                const chapterItem = link.closest('.chapter-item');
+                const sectionsUl = chapterItem.querySelector('.sections-list');
+                const chapterLink = chapterItem.querySelector('.chapter-link');
+                if (sectionsUl) {
+                    sectionsUl.style.display = 'block';
+                    chapterLink.classList.add('expanded');
+                }
+            }
+        });
+        
+        // Load the section content
+        this.loadSection(chapter, section);
+    }
+
+    renderTodoError() {
+        const content = document.getElementById('chapter-content');
+        content.innerHTML = `
+            <div class="todo-content-view">
+                <h1 class="todo-title-main">To-Do: Error</h1>
+                <div class="todo-description">
+                    <p><strong>Error:</strong> No se pudo cargar la vista To-Do.</p>
+                    <p>Por favor, asegúrate de que la estructura del libro esté cargada correctamente.</p>
+                </div>
+            </div>
+        `;
+    }
+
+    async loadAllAudioManifests() {
+        console.log('Loading all audio manifests...');
+        
+        if (!this.bookStructure || !this.bookStructure.chapters) {
+            console.warn('Book structure not available for loading audio manifests');
+            return;
+        }
+
+        // Load audio manifests for all chapters and sections
+        for (const chapter of this.bookStructure.chapters) {
+            // Load chapter-level audio manifest
+            const chapterPath = `book1/${chapter.id}/`;
+            try {
+                const chapterAudioFiles = await this.findAllAudioFiles(chapterPath);
+                this.audioManifestData[`${chapter.id}`] = chapterAudioFiles.map(af => af.name);
+            } catch (error) {
+                console.warn(`Could not load audio manifest for chapter ${chapter.id}:`, error);
+                this.audioManifestData[`${chapter.id}`] = [];
+            }
+
+            // Load section-level audio manifests
+            if (chapter.sections) {
+                for (const section of chapter.sections) {
+                    const sectionPath = `book1/${chapter.id}/${section.id}/`;
+                    try {
+                        const sectionAudioFiles = await this.findAllAudioFiles(sectionPath);
+                        this.audioManifestData[`${chapter.id}-${section.id}`] = sectionAudioFiles.map(af => af.name);
+                    } catch (error) {
+                        console.warn(`Could not load audio manifest for section ${chapter.id}-${section.id}:`, error);
+                        this.audioManifestData[`${chapter.id}-${section.id}`] = [];
+                    }
+                }
+            }
+        }
+
+        console.log('Audio manifest data loaded:', this.audioManifestData);
+    }
+
+
     renderError(item, type = 'chapter', parentChapter = null) {
         const content = document.getElementById('chapter-content');
+        const contentContainer = content.parentElement; // .content element
+        
+        // Remove todo-view class when loading error content
+        contentContainer.classList.remove('todo-view');
+        
         const itemType = type === 'section' ? 'sección' : 'capítulo';
         const breadcrumbHtml = type === 'section' && parentChapter ? 
             `<div class="breadcrumb">${parentChapter.title} > ${item.title}</div>` : '';

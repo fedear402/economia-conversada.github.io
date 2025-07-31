@@ -152,6 +152,11 @@ body {
     padding-top: 40px; /* Base padding - will be adjusted dynamically */
 }
 
+/* Slightly wider content for To-Do view */
+.content.todo-view {
+    max-width: 1200px; /* Reasonable width increase instead of unlimited */
+}
+
 .chapter-header, .section-header {
     position: fixed;
     top: 0;
@@ -298,6 +303,143 @@ body {
     }
 }
 
+/* To-Do content view styles */
+.todo-content-view {
+    background-color: #fff;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    padding: 30px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.todo-title-main {
+    font-size: 1.8em;
+    color: #2c3e50;
+    margin-bottom: 20px;
+    border-bottom: 2px solid #3498db;
+    padding-bottom: 10px;
+}
+
+.todo-description {
+    font-size: 1em;
+    color: #666;
+    margin-bottom: 30px;
+    line-height: 1.6;
+}
+
+.todo-table-container {
+    overflow: auto;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background-color: #fff;
+}
+
+.audio-todo-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85em;
+    table-layout: auto; /* Let columns size based on content */
+}
+
+.audio-todo-table th {
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    padding: 8px 10px;
+    text-align: center;
+    font-weight: 600;
+    color: #495057;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    white-space: nowrap;
+    min-width: 120px; /* Minimum width for chapter columns */
+}
+
+.section-header-cell {
+    background-color: #e9ecef !important;
+    text-align: center !important;
+    width: 80px; /* Smaller fixed width for section column */
+    min-width: 80px;
+    font-weight: 700;
+}
+
+.audio-todo-table td {
+    border: 1px solid #dee2e6;
+    padding: 6px 8px;
+    text-align: left;
+    vertical-align: top;
+    line-height: 1.3;
+    min-width: 120px; /* Allow cells to be wide enough for content */
+    max-width: 200px; /* But not too wide */
+}
+
+.section-name-cell {
+    background-color: #f8f9fa;
+    font-weight: 600;
+    color: #495057;
+    text-align: center;
+    width: 80px;
+    min-width: 80px;
+    max-width: 80px;
+}
+
+.audio-files-cell {
+    color: #666;
+    font-family: 'Courier New', monospace;
+    font-size: 0.8em;
+}
+
+.audio-files-cell.empty {
+    color: #ccc;
+    font-style: italic;
+    text-align: center;
+    cursor: default;
+}
+
+.audio-files-cell:not(.empty) {
+    background-color: #fdfdfd;
+    border-left: 3px solid #e9ecef;
+}
+
+.audio-files-cell:not(.empty):hover {
+    border-left-color: #3498db;
+    background-color: #f8f9fa;
+}
+
+.audio-file-item {
+    display: block;
+    margin-bottom: 2px;
+    padding: 2px 4px;
+    background-color: #f8f9fa;
+    border-radius: 3px;
+    border: 1px solid #e9ecef;
+    white-space: nowrap;
+    overflow: visible; /* Show full filename */
+    font-size: 0.8em;
+    line-height: 1.2;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-decoration: none;
+    color: #495057;
+}
+
+.audio-file-item:last-child {
+    margin-bottom: 0;
+}
+
+.audio-file-item:hover {
+    background-color: #3498db;
+    border-color: #2980b9;
+    color: white;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(52, 152, 219, 0.3);
+}
+
+.audio-file-item:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 2px rgba(52, 152, 219, 0.3);
+}
+
 @media (max-width: 768px) {
     .container {
         flex-direction: column;
@@ -326,5 +468,25 @@ body {
         top: auto;
         margin-bottom: 20px;
         border-radius: 6px;
+    }
+    
+    .todo-content-view {
+        padding: 20px;
+    }
+    
+    .audio-todo-table {
+        font-size: 0.75em;
+    }
+    
+    .audio-todo-table td {
+        padding: 4px 6px;
+        min-width: 80px;
+        max-width: 120px;
+        font-size: 0.75em;
+    }
+    
+    .audio-file-item {
+        font-size: 0.7em;
+        padding: 1px 2px;
     }
 }

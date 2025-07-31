@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Demo - To-Do Navigation</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .demo-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.8);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .demo-popup {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            max-width: 500px;
+            text-align: center;
+        }
+        .demo-popup h2 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+        }
+        .demo-popup p {
+            margin-bottom: 15px;
+            line-height: 1.6;
+        }
+        .demo-popup button {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .demo-popup button:hover {
+            background: #2980b9;
+        }
+        .highlight-todo {
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% { background-color: transparent; }
+            50% { background-color: #f39c12; }
+            100% { background-color: transparent; }
+        }
+    </style>
+</head>
+<body>
+    <div class="demo-overlay" id="demo-overlay">
+        <div class="demo-popup">
+            <h2>🎯 Demo: To-Do Navigation</h2>
+            <p><strong>Instrucciones:</strong></p>
+            <p>1. Haz clic en <strong>"To-Do"</strong> en la barra lateral izquierda</p>
+            <p>2. Verás una tabla con todos los archivos de audio organizados por sección y capítulo</p>
+            <p>3. Cada celda muestra los nombres de archivos en texto plano</p>
+            <button onclick="startDemo()">¡Empezar Demo!</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <aside class="sidebar">
+            <h2>Capítulos</h2>
+            <nav id="chapter-nav">
+                <!-- Chapter navigation will be populated by JavaScript -->
+            </nav>
+        </aside>
+        
+        <main class="content">
+            <div id="chapter-content">
+                <div class="welcome">
+                    <h1>Demo: To-Do Navigation</h1>
+                    <p>👈 Haz clic en <strong>"To-Do"</strong> en la barra lateral para ver la tabla de archivos de audio.</p>
+                    <hr style="margin: 30px 0;">
+                    <h2>Características del To-Do:</h2>
+                    <ul style="text-align: left; max-width: 600px; margin: 0 auto;">
+                        <li>📊 <strong>Tabla de matriz:</strong> Secciones como filas, capítulos como columnas</li>
+                        <li>🎵 <strong>Archivos de audio:</strong> Nombres mostrados en texto plano</li>
+                        <li>📱 <strong>Responsivo:</strong> Se adapta a desktop y móvil</li>
+                        <li>🔄 <strong>Dinámico:</strong> Se actualiza automáticamente con el contenido real</li>
+                        <li>📋 <strong>Completo:</strong> Muestra todos los archivos existentes</li>
+                    </ul>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <script src="script.js"></script>
+    <script>
+        function startDemo() {
+            document.getElementById('demo-overlay').style.display = 'none';
+            
+            // Wait for the page to load and then highlight the To-Do item
+            setTimeout(() => {
+                const todoLinks = document.querySelectorAll('a[href="#"]');
+                todoLinks.forEach(link => {
+                    if (link.textContent.trim() === 'To-Do') {
+                        link.classList.add('highlight-todo');
+                        // Remove highlight after 4 seconds
+                        setTimeout(() => {
+                            link.classList.remove('highlight-todo');
+                        }, 4000);
+                    }
+                });
+            }, 1000);
+        }
+
+        // Initialize the chapter viewer
+        document.addEventListener('DOMContentLoaded', () => {
+            new ChapterViewer();
+        });
+    </script>
+</body>
+</html>
