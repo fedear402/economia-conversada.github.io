@@ -4,6 +4,7 @@ class ChapterViewer {
         this.currentChapter = null;
         this.currentSection = null;
         this.audioManifestData = {}; // Cache for audio manifest data
+        this.characterData = {}; // Cache for character data
         this.init();
     }
 
@@ -12,6 +13,7 @@ class ChapterViewer {
         console.log('Book structure loaded:', this.bookStructure);
         await this.renderNavigation();
         await this.loadAllAudioManifests();
+        await this.loadCharacterData();
     }
 
     async loadBookStructure() {
@@ -468,8 +470,8 @@ class ChapterViewer {
         const description = document.createElement('div');
         description.className = 'todo-description';
         description.innerHTML = `
-            <p>Esta tabla muestra todos los archivos de audio disponibles organizados por sección y capítulo. 
-            Cada celda contiene los nombres de los archivos de audio que existen en esa combinación específica.</p>
+            <p>Esta tabla muestra todos los archivos de audio y personajes organizados por sección y capítulo. 
+            Cada celda contiene los nombres de los archivos de audio (azul, clickeables) y los personajes (amarillo) en esa sección.</p>
             <p><strong>Filas:</strong> Secciones (S1, S2, S3, etc.) | <strong>Columnas:</strong> Capítulos (I, II, III, etc.)</p>
             <button onclick="location.reload(true);" style="margin-top: 10px; padding: 5px 10px; background: #3498db; color: white; border: none; border-radius: 3px; cursor: pointer; margin-right: 10px;">🔄 Recargar página</button>
             <button onclick="window.chapterViewer && window.chapterViewer.forceRefreshTodo();" style="margin-top: 10px; padding: 5px 10px; background: #e74c3c; color: white; border: none; border-radius: 3px; cursor: pointer;">🔄 Recargar solo tabla</button>
@@ -570,10 +572,13 @@ class ChapterViewer {
                 
                 if (section) {
                     const audioFiles = this.audioManifestData[`${chapter.id}-S${i}`] || [];
-                    console.log(`${chapter.id}-S${i}: Found ${audioFiles.length} audio files:`, audioFiles);
+                    const characterKey = `${chapter.id}/S${i}`;
+                    const characters = this.characterData[characterKey] || [];
                     
+                    console.log(`${chapter.id}-S${i}: Found ${audioFiles.length} audio files and ${characters.length} characters:`, audioFiles, characters);
+                    
+                    // Add audio files
                     if (audioFiles.length > 0) {
-                        // Create individual clickable spans for each audio file
                         audioFiles.forEach(fileName => {
                             const fileSpan = document.createElement('span');
                             fileSpan.className = 'audio-file-item';
@@ -588,10 +593,34 @@ class ChapterViewer {
                             
                             cell.appendChild(fileSpan);
                         });
-                    } else {
+                    }
+                    
+                    // Add character information
+                    if (characters.length > 0) {
+                        const charactersDiv = document.createElement('div');
+                        charactersDiv.className = 'character-names';
+                        
+                        const label = document.createElement('span');
+                        label.className = 'character-label';
+                        label.textContent = 'Personajes:';
+                        charactersDiv.appendChild(label);
+                        
+                        characters.forEach(character => {
+                            const characterSpan = document.createElement('span');
+                            characterSpan.className = 'character-item';
+                            characterSpan.textContent = character;
+                            characterSpan.title = `Personaje en ${section.title}`;
+                            charactersDiv.appendChild(characterSpan);
+                        });
+                        
+                        cell.appendChild(charactersDiv);
+                    }
+                    
+                    // Handle empty cells
+                    if (audioFiles.length === 0 && characters.length === 0) {
                         cell.textContent = '—';
                         cell.className += ' empty';
-                        cell.title = 'No hay archivos de audio';
+                        cell.title = 'No hay archivos de audio ni personajes';
                     }
                 } else {
                     // Section doesn't exist for this chapter
@@ -608,28 +637,32 @@ class ChapterViewer {
 
         // Add summary info
         const totalAudioFiles = Object.values(this.audioManifestData).reduce((sum, files) => sum + files.length, 0);
+        const totalCharacterSections = Object.keys(this.characterData).length;
         const statusDiv = document.createElement('div');
         statusDiv.style.textAlign = 'center';
         statusDiv.style.padding = '10px';
         statusDiv.style.color = '#666';
         statusDiv.style.fontSize = '0.9em';
-        statusDiv.innerHTML = `📊 Total: ${totalAudioFiles} archivos de audio encontrados en ${maxSections} secciones y ${this.bookStructure.chapters.length} capítulos`;
+        statusDiv.innerHTML = `📊 Total: ${totalAudioFiles} archivos de audio | ${totalCharacterSections} secciones con personajes | ${maxSections} secciones en ${this.bookStructure.chapters.length} capítulos`;
         
         // Insert after table
         table.parentElement.appendChild(statusDiv);
 
         console.log(`To-Do table rendered with ${maxSections} section rows and ${this.bookStructure.chapters.length} chapter columns`);
         console.log(`Total audio files loaded: ${totalAudioFiles}`);
+        console.log(`Total character sections loaded: ${totalCharacterSections}`);
     }
 
     async forceRefreshTodo() {
         console.log('🔄 Force refreshing To-Do table...');
         
-        // Clear cached audio manifest data
+        // Clear cached data
         this.audioManifestData = {};
+        this.characterData = {};
         
-        // Reload all audio manifests
+        // Reload all data
         await this.loadAllAudioManifests();
+        await this.loadCharacterData();
         
         // Re-render the To-Do view
         await this.renderTodoContent();
@@ -712,6 +745,23 @@ class ChapterViewer {
         console.log('Audio manifest data loaded:', this.audioManifestData);
     }
 
+    async loadCharacterData() {
+        console.log('Loading character data...');
+        
+        try {
+            const response = await fetch('section_characters.json', { cache: 'no-cache' });
+            if (response.ok) {
+                this.characterData = await response.json();
+                console.log('✅ Character data loaded:', Object.keys(this.characterData).length, 'sections');
+            } else {
+                console.warn('❌ Failed to load character data:', response.status);
+                this.characterData = {};
+            }
+        } catch (error) {
+            console.warn('❌ Error loading character data:', error);
+            this.characterData = {};
+        }
+    }
 
     renderError(item, type = 'chapter', parentChapter = null) {
         const content = document.getElementById('chapter-content');
