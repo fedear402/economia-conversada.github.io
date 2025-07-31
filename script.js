@@ -5,6 +5,7 @@ class ChapterViewer {
         this.currentSection = null;
         this.audioManifestData = {}; // Cache for audio manifest data
         this.characterData = {}; // Cache for character data
+        this.deletedFiles = this.loadDeletedFiles(); // Track deleted files in localStorage
         this.init();
     }
 
@@ -80,7 +81,16 @@ class ChapterViewer {
         if (resp.ok) {
             const list = await resp.json();
             console.log(`✅ Loaded manifest ${manifestPath}: ${list.length} files -`, list);
-            return list.map(fn => ({
+            
+            // Filter out deleted files
+            const filteredList = list.filter(fn => {
+                const filePath = folderPath + fn;
+                return !this.isFileDeleted(filePath);
+            });
+            
+            console.log(`🔽 Filtered out ${list.length - filteredList.length} deleted files, showing ${filteredList.length}`);
+            
+            return filteredList.map(fn => ({
                 path: folderPath + fn,
                 name: fn,
                 displayName: this.formatAudioName(fn)
@@ -166,6 +176,25 @@ class ChapterViewer {
         
         todoLi.appendChild(todoLink);
         ul.appendChild(todoLi);
+        
+        // Add Deleted Files item
+        const deletedCount = Object.keys(this.deletedFiles).length;
+        if (deletedCount > 0) {
+            const deletedLi = document.createElement('li');
+            deletedLi.className = 'chapter-item';
+            
+            const deletedLink = document.createElement('a');
+            deletedLink.href = '#';
+            deletedLink.textContent = `Archivos Eliminados (${deletedCount})`;
+            deletedLink.className = 'chapter-link deleted-files-link';
+            deletedLink.onclick = (e) => {
+                e.preventDefault();
+                this.loadDeletedFilesView();
+            };
+            
+            deletedLi.appendChild(deletedLink);
+            ul.appendChild(deletedLi);
+        }
         
         // Use titles directly from book-structure.json (fast, no HTTP requests)
         this.bookStructure.chapters.forEach(chapter => {
@@ -748,53 +777,73 @@ class ChapterViewer {
         }
     }
 
+    loadDeletedFiles() {
+        try {
+            const deleted = localStorage.getItem('deletedAudioFiles');
+            return deleted ? JSON.parse(deleted) : {};
+        } catch (error) {
+            console.warn('Could not load deleted files from localStorage:', error);
+            return {};
+        }
+    }
+
+    saveDeletedFiles() {
+        try {
+            localStorage.setItem('deletedAudioFiles', JSON.stringify(this.deletedFiles));
+        } catch (error) {
+            console.warn('Could not save deleted files to localStorage:', error);
+        }
+    }
+
+    markFileAsDeleted(filePath, fileName) {
+        this.deletedFiles[filePath] = {
+            deleted_at: new Date().toISOString(),
+            reason: 'user_deleted',
+            name: fileName
+        };
+        this.saveDeletedFiles();
+        console.log(`✅ Marked file as deleted: ${fileName} (stored in localStorage)`);
+    }
+
+    isFileDeleted(filePath) {
+        return this.deletedFiles.hasOwnProperty(filePath);
+    }
+
     async deleteAudioFile(chapter, section, fileName, fileElement) {
         try {
             const filePath = `book1/${chapter.id}/${section.id}/${fileName}`;
-            const response = await fetch(`/api/delete-audio/${filePath}`, {
-                method: 'DELETE',
-                headers: {
-                    'Content-Type': 'application/json'
+            
+            // Mark file as deleted in localStorage
+            this.markFileAsDeleted(filePath, fileName);
+            
+            // Remove the file element from the UI
+            fileElement.remove();
+            
+            // Update the cached audio manifest data
+            const sectionKey = `${chapter.id}-${section.id}`;
+            if (this.audioManifestData[sectionKey]) {
+                const index = this.audioManifestData[sectionKey].indexOf(fileName);
+                if (index > -1) {
+                    this.audioManifestData[sectionKey].splice(index, 1);
                 }
-            });
-
-            const result = await response.json();
-
-            if (response.ok) {
-                // Remove the file element from the UI
-                fileElement.remove();
-                
-                // Update the cached audio manifest data
-                const sectionKey = `${chapter.id}-${section.id}`;
-                if (this.audioManifestData[sectionKey]) {
-                    const index = this.audioManifestData[sectionKey].indexOf(fileName);
-                    if (index > -1) {
-                        this.audioManifestData[sectionKey].splice(index, 1);
-                    }
-                }
-                
-                console.log(`✅ Deleted audio file: ${fileName}`);
-                
-                // Check if this was the last audio file in the cell
-                const cell = fileElement.parentElement;
-                const remainingAudioFiles = cell.querySelectorAll('.audio-file-item');
-                if (remainingAudioFiles.length === 0) {
-                    // Check if there are character names
-                    const characterNames = cell.querySelector('.character-names');
-                    if (!characterNames) {
-                        cell.textContent = '—';
-                        cell.className += ' empty';
-                        cell.title = 'No hay archivos de audio ni personajes';
-                    }
-                }
-                
-                // Update status summary
-                this.updateTodoSummary();
-                
-            } else {
-                alert(`Error al eliminar el archivo: ${result.error}`);
-                console.error('Delete failed:', result.error);
             }
+            
+            // Check if this was the last audio file in the cell
+            const cell = fileElement.parentElement;
+            const remainingAudioFiles = cell.querySelectorAll('.audio-file-item');
+            if (remainingAudioFiles.length === 0) {
+                // Check if there are character names
+                const characterNames = cell.querySelector('.character-names');
+                if (!characterNames) {
+                    cell.textContent = '—';
+                    cell.className += ' empty';
+                    cell.title = 'No hay archivos de audio ni personajes';
+                }
+            }
+            
+            // Update status summary
+            this.updateTodoSummary();
+            
         } catch (error) {
             alert(`Error al eliminar el archivo: ${error.message}`);
             console.error('Delete error:', error);
@@ -803,32 +852,19 @@ class ChapterViewer {
 
     async deleteAudioFileFromSection(audioFile, containerElement, type, parentChapter) {
         try {
-            const response = await fetch(`/api/delete-audio/${audioFile.path}`, {
-                method: 'DELETE',
-                headers: {
-                    'Content-Type': 'application/json'
-                }
-            });
-
-            const result = await response.json();
-
-            if (response.ok) {
-                // Remove the container element from the UI
-                containerElement.remove();
-                
-                console.log(`✅ Deleted audio file: ${audioFile.name}`);
-                
-                // Reload the current section/chapter to refresh the view
-                if (this.currentSection && parentChapter) {
-                    this.loadSection(parentChapter, this.currentSection);
-                } else if (this.currentChapter) {
-                    this.loadChapter(this.currentChapter);
-                }
-                
-            } else {
-                alert(`Error al eliminar el archivo: ${result.error}`);
-                console.error('Delete failed:', result.error);
+            // Mark file as deleted in localStorage
+            this.markFileAsDeleted(audioFile.path, audioFile.name);
+            
+            // Remove the container element from the UI
+            containerElement.remove();
+            
+            // Reload the current section/chapter to refresh the view
+            if (this.currentSection && parentChapter) {
+                this.loadSection(parentChapter, this.currentSection);
+            } else if (this.currentChapter) {
+                this.loadChapter(this.currentChapter);
             }
+            
         } catch (error) {
             alert(`Error al eliminar el archivo: ${error.message}`);
             console.error('Delete error:', error);
@@ -846,6 +882,187 @@ class ChapterViewer {
             ));
             statusDiv.innerHTML = `📊 Total: ${totalAudioFiles} archivos de audio | ${totalCharacterSections} secciones con personajes | ${maxSections} secciones en ${this.bookStructure.chapters.length} capítulos`;
         }
+    }
+
+    async loadDeletedFilesView() {
+        try {
+            // Update active nav item
+            document.querySelectorAll('.sidebar nav a').forEach(a => a.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            this.renderDeletedFilesContent();
+            this.currentChapter = null;
+            this.currentSection = null;
+        } catch (error) {
+            console.error('Error loading deleted files view:', error);
+            this.renderDeletedFilesError();
+        }
+    }
+
+    renderDeletedFilesContent() {
+        const content = document.getElementById('chapter-content');
+        const contentContainer = content.parentElement;
+        
+        contentContainer.classList.add('todo-view');
+        
+        const deletedView = document.createElement('div');
+        deletedView.className = 'deleted-files-view';
+        
+        const title = document.createElement('h1');
+        title.className = 'deleted-title-main';
+        title.textContent = 'Archivos Eliminados';
+        deletedView.appendChild(title);
+        
+        const description = document.createElement('div');
+        description.className = 'deleted-description';
+        description.innerHTML = `
+            <p>Estos archivos han sido marcados como eliminados durante esta sesión. Los archivos seguirán apareciendo hasta el próximo despliegue.</p>
+            <p><strong>Total eliminados:</strong> ${Object.keys(this.deletedFiles).length}</p>
+            <button onclick="window.chapterViewer && window.chapterViewer.clearAllDeleted();" style="margin-top: 10px; padding: 5px 10px; background: #e74c3c; color: white; border: none; border-radius: 3px; cursor: pointer; margin-right: 10px;">🗑️ Limpiar Lista</button>
+            <button onclick="window.chapterViewer && window.chapterViewer.exportDeletedList();" style="margin-top: 10px; padding: 5px 10px; background: #3498db; color: white; border: none; border-radius: 3px; cursor: pointer;">📋 Exportar Lista</button>
+        `;
+        deletedView.appendChild(description);
+        
+        if (Object.keys(this.deletedFiles).length === 0) {
+            const emptyMsg = document.createElement('div');
+            emptyMsg.style.textAlign = 'center';
+            emptyMsg.style.padding = '40px';
+            emptyMsg.style.color = '#666';
+            emptyMsg.textContent = 'No hay archivos eliminados en esta sesión.';
+            deletedView.appendChild(emptyMsg);
+        } else {
+            const table = document.createElement('table');
+            table.className = 'deleted-files-table';
+            table.style.width = '100%';
+            table.style.borderCollapse = 'collapse';
+            table.style.marginTop = '20px';
+            
+            const thead = document.createElement('thead');
+            const headerRow = document.createElement('tr');
+            ['Archivo', 'Ruta', 'Eliminado', 'Acciones'].forEach(headerText => {
+                const th = document.createElement('th');
+                th.textContent = headerText;
+                th.style.border = '1px solid #ddd';
+                th.style.padding = '8px';
+                th.style.backgroundColor = '#f5f5f5';
+                headerRow.appendChild(th);
+            });
+            thead.appendChild(headerRow);
+            table.appendChild(thead);
+            
+            const tbody = document.createElement('tbody');
+            Object.entries(this.deletedFiles).forEach(([filePath, info]) => {
+                const row = document.createElement('tr');
+                
+                const nameCell = document.createElement('td');
+                nameCell.textContent = info.name || filePath.split('/').pop();
+                nameCell.style.border = '1px solid #ddd';
+                nameCell.style.padding = '8px';
+                
+                const pathCell = document.createElement('td');
+                pathCell.textContent = filePath;
+                pathCell.style.border = '1px solid #ddd';
+                pathCell.style.padding = '8px';
+                pathCell.style.fontSize = '0.9em';
+                pathCell.style.color = '#666';
+                
+                const dateCell = document.createElement('td');
+                const deleteDate = new Date(info.deleted_at);
+                dateCell.textContent = deleteDate.toLocaleString();
+                dateCell.style.border = '1px solid #ddd';
+                dateCell.style.padding = '8px';
+                dateCell.style.fontSize = '0.9em';
+                
+                const actionsCell = document.createElement('td');
+                actionsCell.style.border = '1px solid #ddd';
+                actionsCell.style.padding = '8px';
+                
+                const restoreBtn = document.createElement('button');
+                restoreBtn.textContent = '↺ Restaurar';
+                restoreBtn.style.background = '#27ae60';
+                restoreBtn.style.color = 'white';
+                restoreBtn.style.border = 'none';
+                restoreBtn.style.padding = '4px 8px';
+                restoreBtn.style.borderRadius = '3px';
+                restoreBtn.style.cursor = 'pointer';
+                restoreBtn.style.fontSize = '0.8em';
+                restoreBtn.onclick = () => this.restoreDeletedFile(filePath, row);
+                
+                actionsCell.appendChild(restoreBtn);
+                
+                row.appendChild(nameCell);
+                row.appendChild(pathCell);
+                row.appendChild(dateCell);
+                row.appendChild(actionsCell);
+                
+                tbody.appendChild(row);
+            });
+            table.appendChild(tbody);
+            
+            deletedView.appendChild(table);
+        }
+        
+        content.innerHTML = '';
+        content.appendChild(deletedView);
+    }
+
+    restoreDeletedFile(filePath, rowElement) {
+        delete this.deletedFiles[filePath];
+        this.saveDeletedFiles();
+        rowElement.remove();
+        
+        // Update navigation to reflect change
+        this.renderNavigation();
+        
+        console.log(`✅ Restored file: ${filePath}`);
+        
+        // If no more deleted files, reload the view
+        if (Object.keys(this.deletedFiles).length === 0) {
+            this.renderDeletedFilesContent();
+        }
+    }
+
+    clearAllDeleted() {
+        if (confirm('¿Estás seguro de que quieres limpiar toda la lista de archivos eliminados? Esto restaurará todos los archivos.')) {
+            this.deletedFiles = {};
+            this.saveDeletedFiles();
+            this.renderNavigation();
+            this.renderDeletedFilesContent();
+            console.log('✅ Cleared all deleted files');
+        }
+    }
+
+    exportDeletedList() {
+        const deletedList = Object.entries(this.deletedFiles).map(([path, info]) => ({
+            path,
+            name: info.name,
+            deleted_at: info.deleted_at,
+            reason: info.reason
+        }));
+        
+        const dataStr = JSON.stringify(deletedList, null, 2);
+        const dataBlob = new Blob([dataStr], {type: 'application/json'});
+        const url = URL.createObjectURL(dataBlob);
+        
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `deleted_files_${new Date().toISOString().split('T')[0]}.json`;
+        link.click();
+        
+        URL.revokeObjectURL(url);
+        console.log('📋 Exported deleted files list');
+    }
+
+    renderDeletedFilesError() {
+        const content = document.getElementById('chapter-content');
+        content.innerHTML = `
+            <div class="deleted-files-view">
+                <h1 class="deleted-title-main">Error</h1>
+                <div class="deleted-description">
+                    <p><strong>Error:</strong> No se pudo cargar la vista de archivos eliminados.</p>
+                </div>
+            </div>
+        `;
     }
 
     renderTodoError() {
