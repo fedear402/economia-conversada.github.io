@@ -409,14 +409,13 @@ body {
 .audio-file-item {
     display: flex;
     align-items: center;
-    justify-content: space-between;
     margin-bottom: 2px;
     padding: 2px 4px;
     background-color: #f8f9fa;
     border-radius: 3px;
     border: 1px solid #e9ecef;
     white-space: nowrap;
-    overflow: visible; /* Show full filename */
+    overflow: hidden; /* Hide overflow */
     font-size: 0.8em;
     line-height: 1.2;
     cursor: pointer;
@@ -427,7 +426,10 @@ body {
 
 .audio-file-name {
     flex: 1;
-    margin-right: 4px;
+    margin-left: 4px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .audio-delete-btn {
@@ -445,8 +447,8 @@ body {
     justify-content: center;
     opacity: 0.7;
     transition: all 0.2s ease;
-    margin-left: 4px;
     flex-shrink: 0;
+    order: -1; /* Move delete button to the left */
 }
 
 .audio-delete-btn:hover {

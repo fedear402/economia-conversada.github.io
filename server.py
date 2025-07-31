@@ -9,8 +9,37 @@ import socketserver
 import os
 import json
 import urllib.parse
+from datetime import datetime
 
 PORT = 8000
+DELETION_HISTORY_FILE = 'deleted_files_history.json'
+
+def load_deletion_history():
+    """Load the history of deleted files."""
+    if not os.path.exists(DELETION_HISTORY_FILE):
+        return {}
+    
+    try:
+        with open(DELETION_HISTORY_FILE, 'r', encoding='utf-8') as f:
+            return json.load(f)
+    except (json.JSONDecodeError, IOError) as e:
+        print(f"Warning: Could not read deletion history: {e}")
+        return {}
+
+def save_deletion_history(history):
+    """Save the history of deleted files."""
+    try:
+        with open(DELETION_HISTORY_FILE, 'w', encoding='utf-8') as f:
+            json.dump(history, f, indent=2, ensure_ascii=False)
+    except IOError as e:
+        print(f"Warning: Could not save deletion history: {e}")
+
+def record_deletion(history, file_path, reason="user_deleted"):
+    """Record a file deletion in the history."""
+    history[file_path] = {
+        'deleted_at': datetime.now().isoformat(),
+        'reason': reason
+    }
 
 class MyHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
     def end_headers(self):
@@ -163,6 +192,11 @@ class MyHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
                 self.wfile.write(json.dumps({"error": "Access denied"}).encode())
                 return
             
+            # Record deletion in history before deleting the file
+            deletion_history = load_deletion_history()
+            record_deletion(deletion_history, file_path, "user_deleted")
+            save_deletion_history(deletion_history)
+            
             # Delete the file
             os.remove(full_path)
             
@@ -183,6 +217,8 @@ class MyHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
                             json.dump(manifest, f, indent=0, ensure_ascii=False)
                 except Exception as e:
                     print(f"Warning: Could not update manifest: {e}")
+            
+            print(f"User deleted file: {file_path} (recorded in deletion history)")
             
             self.send_response(200)
             self.send_header('Content-type', 'application/json')
