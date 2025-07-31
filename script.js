@@ -28,17 +28,17 @@ class ChapterViewer {
             
             if (response.ok) {
                 this.bookStructure = await response.json();
-                console.log('✅ Loaded book structure from static file with', this.bookStructure.chapters.length, 'chapters');
+                console.log('Loaded book structure from static file with', this.bookStructure.chapters.length, 'chapters');
                 return;
             } else {
-                console.log('❌ book-structure.json returned status:', response.status);
+                console.log('book-structure.json returned status:', response.status);
             }
         } catch (error) {
-            console.log('❌ Failed to load book-structure.json:', error);
+            console.log('Failed to load book-structure.json:', error);
         }
 
         // More detailed fallback for debugging
-        console.log('🔄 Using fallback structure - this means book-structure.json is not deployed');
+        console.log('Using fallback structure - this means book-structure.json is not deployed');
         
         // Provide a working fallback with at least some structure
         this.bookStructure = {
@@ -80,7 +80,7 @@ class ChapterViewer {
         const resp = await fetch(manifestPath, { cache: 'no-cache' }); // Disable caching
         if (resp.ok) {
             const list = await resp.json();
-            console.log(`✅ Loaded manifest ${manifestPath}: ${list.length} files -`, list);
+            console.log(`Loaded manifest ${manifestPath}: ${list.length} files -`, list);
             
             // Filter out deleted files
             const filteredList = list.filter(fn => {
@@ -88,7 +88,7 @@ class ChapterViewer {
                 return !this.isFileDeleted(filePath);
             });
             
-            console.log(`🔽 Filtered out ${list.length - filteredList.length} deleted files, showing ${filteredList.length}`);
+            console.log(`Filtered out ${list.length - filteredList.length} deleted files, showing ${filteredList.length}`);
             
             return filteredList.map(fn => ({
                 path: folderPath + fn,
@@ -96,13 +96,13 @@ class ChapterViewer {
                 displayName: this.formatAudioName(fn)
             }));
         } else {
-            console.warn(`❌ Failed to load manifest ${manifestPath}: HTTP ${resp.status}`);
+            console.warn(`Failed to load manifest ${manifestPath}: HTTP ${resp.status}`);
         }
     } catch (error) {
-        console.warn(`❌ Error loading manifest ${manifestPath}:`, error);
+        console.warn(`Error loading manifest ${manifestPath}:`, error);
     }
 
-    console.log(`⚪ No manifest found for ${folderPath}, using fallback`);
+    console.log(`No manifest found for ${folderPath}, using fallback`);
     return this.guessAudioFiles(folderPath);   // old brute-force (see option 2)
     }  
     formatAudioName(fileName) {
@@ -522,8 +522,8 @@ class ChapterViewer {
             <p>Esta tabla muestra todos los archivos de audio y personajes organizados por sección y capítulo. 
             Cada celda contiene los nombres de los archivos de audio (azul, clickeables) y los personajes (amarillo) en esa sección.</p>
             <p><strong>Filas:</strong> Secciones (S1, S2, S3, etc.) | <strong>Columnas:</strong> Capítulos (I, II, III, etc.)</p>
-            <button onclick="location.reload(true);" style="margin-top: 10px; padding: 5px 10px; background: #3498db; color: white; border: none; border-radius: 3px; cursor: pointer; margin-right: 10px;">🔄 Recargar página</button>
-            <button onclick="window.chapterViewer && window.chapterViewer.forceRefreshTodo();" style="margin-top: 10px; padding: 5px 10px; background: #e74c3c; color: white; border: none; border-radius: 3px; cursor: pointer;">🔄 Recargar solo tabla</button>
+            <button onclick="location.reload(true);" style="margin-top: 10px; padding: 5px 10px; background: #3498db; color: white; border: none; border-radius: 3px; cursor: pointer; margin-right: 10px;">Recargar página</button>
+            <button onclick="window.chapterViewer && window.chapterViewer.forceRefreshTodo();" style="margin-top: 10px; padding: 5px 10px; background: #e74c3c; color: white; border: none; border-radius: 3px; cursor: pointer;">Recargar solo tabla</button>
         `;
         todoView.appendChild(description);
         
@@ -542,6 +542,9 @@ class ChapterViewer {
         
         content.innerHTML = '';
         content.appendChild(todoView);
+        
+        // Reset padding for todo view (no fixed header)
+        content.style.paddingTop = '20px';
         
         // Ensure audio manifests are loaded before populating table
         if (Object.keys(this.audioManifestData).length === 0) {
@@ -710,7 +713,7 @@ class ChapterViewer {
         statusDiv.style.padding = '10px';
         statusDiv.style.color = '#666';
         statusDiv.style.fontSize = '0.9em';
-        statusDiv.innerHTML = `📊 Total: ${totalAudioFiles} archivos de audio | ${totalCharacterSections} secciones con personajes | ${maxSections} secciones en ${this.bookStructure.chapters.length} capítulos`;
+        statusDiv.innerHTML = `Total: ${totalAudioFiles} archivos de audio | ${totalCharacterSections} secciones con personajes | ${maxSections} secciones en ${this.bookStructure.chapters.length} capítulos`;
         
         // Insert after table
         table.parentElement.appendChild(statusDiv);
@@ -721,7 +724,7 @@ class ChapterViewer {
     }
 
     async forceRefreshTodo() {
-        console.log('🔄 Force refreshing To-Do table...');
+        console.log('Force refreshing To-Do table...');
         
         // Clear cached data
         this.audioManifestData = {};
@@ -819,9 +822,9 @@ class ChapterViewer {
                     timestamp
                 })
             });
-            console.log(`✅ Marked file as deleted: ${fileName} (stored locally + logged to server)`);
+            console.log(`Marked file as deleted: ${fileName} (stored locally + logged to server)`);
         } catch (error) {
-            console.log(`✅ Marked file as deleted: ${fileName} (stored locally, server logging failed)`);
+            console.log(`Marked file as deleted: ${fileName} (stored locally, server logging failed)`);
         }
     }
 
@@ -900,7 +903,7 @@ class ChapterViewer {
             const maxSections = Math.max(...this.bookStructure.chapters.map(ch => 
                 ch.sections ? ch.sections.length : 0
             ));
-            statusDiv.innerHTML = `📊 Total: ${totalAudioFiles} archivos de audio | ${totalCharacterSections} secciones con personajes | ${maxSections} secciones en ${this.bookStructure.chapters.length} capítulos`;
+            statusDiv.innerHTML = `Total: ${totalAudioFiles} archivos de audio | ${totalCharacterSections} secciones con personajes | ${maxSections} secciones en ${this.bookStructure.chapters.length} capítulos`;
         }
     }
 
@@ -938,8 +941,8 @@ class ChapterViewer {
         description.innerHTML = `
             <p>Estos archivos han sido marcados como eliminados durante esta sesión. Los archivos seguirán apareciendo hasta el próximo despliegue.</p>
             <p><strong>Total eliminados:</strong> ${Object.keys(this.deletedFiles).length}</p>
-            <button onclick="window.chapterViewer && window.chapterViewer.clearAllDeleted();" style="margin-top: 10px; padding: 5px 10px; background: #e74c3c; color: white; border: none; border-radius: 3px; cursor: pointer; margin-right: 10px;">🗑️ Limpiar Lista</button>
-            <button onclick="window.chapterViewer && window.chapterViewer.exportDeletedList();" style="margin-top: 10px; padding: 5px 10px; background: #3498db; color: white; border: none; border-radius: 3px; cursor: pointer;">📋 Exportar Lista</button>
+            <button onclick="window.chapterViewer && window.chapterViewer.clearAllDeleted();" style="margin-top: 10px; padding: 5px 10px; background: #e74c3c; color: white; border: none; border-radius: 3px; cursor: pointer; margin-right: 10px;">Limpiar Lista</button>
+            <button onclick="window.chapterViewer && window.chapterViewer.exportDeletedList();" style="margin-top: 10px; padding: 5px 10px; background: #3498db; color: white; border: none; border-radius: 3px; cursor: pointer;">Exportar Lista</button>
         `;
         deletedView.appendChild(description);
         
@@ -998,7 +1001,7 @@ class ChapterViewer {
                 actionsCell.style.padding = '8px';
                 
                 const restoreBtn = document.createElement('button');
-                restoreBtn.textContent = '↺ Restaurar';
+                restoreBtn.textContent = 'Restaurar';
                 restoreBtn.style.background = '#27ae60';
                 restoreBtn.style.color = 'white';
                 restoreBtn.style.border = 'none';
@@ -1024,6 +1027,9 @@ class ChapterViewer {
         
         content.innerHTML = '';
         content.appendChild(deletedView);
+        
+        // Reset padding for deleted files view (no fixed header)
+        content.style.paddingTop = '20px';
     }
 
     restoreDeletedFile(filePath, rowElement) {
@@ -1034,7 +1040,7 @@ class ChapterViewer {
         // Update navigation to reflect change
         this.renderNavigation();
         
-        console.log(`✅ Restored file: ${filePath}`);
+        console.log(`Restored file: ${filePath}`);
         
         // If no more deleted files, reload the view
         if (Object.keys(this.deletedFiles).length === 0) {
@@ -1048,7 +1054,7 @@ class ChapterViewer {
             this.saveDeletedFiles();
             this.renderNavigation();
             this.renderDeletedFilesContent();
-            console.log('✅ Cleared all deleted files');
+            console.log('Cleared all deleted files');
         }
     }
 
@@ -1070,7 +1076,7 @@ class ChapterViewer {
         link.click();
         
         URL.revokeObjectURL(url);
-        console.log('📋 Exported deleted files list');
+        console.log('Exported deleted files list');
     }
 
     renderDeletedFilesError() {
@@ -1143,13 +1149,13 @@ class ChapterViewer {
             const response = await fetch('section_characters.json', { cache: 'no-cache' });
             if (response.ok) {
                 this.characterData = await response.json();
-                console.log('✅ Character data loaded:', Object.keys(this.characterData).length, 'sections');
+                console.log('Character data loaded:', Object.keys(this.characterData).length, 'sections');
             } else {
-                console.warn('❌ Failed to load character data:', response.status);
+                console.warn('Failed to load character data:', response.status);
                 this.characterData = {};
             }
         } catch (error) {
-            console.warn('❌ Error loading character data:', error);
+            console.warn('Error loading character data:', error);
             this.characterData = {};
         }
     }

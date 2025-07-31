@@ -25,7 +25,7 @@ export default function handler(req, res) {
     }
     
     // Just log the deletion (no actual file operations)
-    console.log(`🗑️ DELETION LOGGED: ${fileName} at ${filePath} on ${timestamp}`);
+    console.log(`DELETION LOGGED: ${fileName} at ${filePath} on ${timestamp}`);
     
     // Return success (files remain hidden via localStorage)
     res.status(200).json({ 
