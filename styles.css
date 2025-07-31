@@ -407,7 +407,9 @@ body {
 }
 
 .audio-file-item {
-    display: block;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
     margin-bottom: 2px;
     padding: 2px 4px;
     background-color: #f8f9fa;
@@ -421,6 +423,40 @@ body {
     transition: all 0.2s ease;
     text-decoration: none;
     color: #495057;
+}
+
+.audio-file-name {
+    flex: 1;
+    margin-right: 4px;
+}
+
+.audio-delete-btn {
+    background: #dc3545;
+    color: white;
+    border: none;
+    border-radius: 2px;
+    width: 16px;
+    height: 16px;
+    font-size: 10px;
+    font-weight: bold;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0.7;
+    transition: all 0.2s ease;
+    margin-left: 4px;
+    flex-shrink: 0;
+}
+
+.audio-delete-btn:hover {
+    opacity: 1;
+    background: #c82333;
+    transform: scale(1.1);
+}
+
+.audio-file-item:hover .audio-delete-btn {
+    opacity: 1;
 }
 
 .audio-file-item:last-child {

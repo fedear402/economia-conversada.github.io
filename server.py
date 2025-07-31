@@ -16,9 +16,13 @@ class MyHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
     def end_headers(self):
         # Add CORS headers to allow local file access
         self.send_header('Access-Control-Allow-Origin', '*')
-        self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+        self.send_header('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS')
         self.send_header('Access-Control-Allow-Headers', 'Content-Type')
         super().end_headers()
+    
+    def do_OPTIONS(self):
+        self.send_response(200)
+        self.end_headers()
     
     def do_GET(self):
         parsed_path = urllib.parse.urlparse(self.path)
@@ -27,6 +31,15 @@ class MyHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
             self.handle_book_structure()
         else:
             super().do_GET()
+    
+    def do_DELETE(self):
+        parsed_path = urllib.parse.urlparse(self.path)
+        
+        if parsed_path.path.startswith('/api/delete-audio/'):
+            self.handle_delete_audio()
+        else:
+            self.send_response(404)
+            self.end_headers()
     
     def handle_book_structure(self):
         try:
@@ -118,6 +131,69 @@ class MyHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
                                              os.path.dirname(os.path.abspath(__file__)))
                     return rel_path.replace('\\', '/')
         return None
+    
+    def handle_delete_audio(self):
+        try:
+            # Extract the file path from the URL
+            # URL format: /api/delete-audio/book1/C1/S1/filename.mp3
+            url_parts = self.path.split('/')
+            if len(url_parts) < 6:
+                self.send_response(400)
+                self.send_header('Content-type', 'application/json')
+                self.end_headers()
+                self.wfile.write(json.dumps({"error": "Invalid file path"}).encode())
+                return
+            
+            # Reconstruct the file path
+            file_path = '/'.join(url_parts[3:])  # Skip '', 'api', 'delete-audio'
+            full_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), file_path)
+            
+            if not os.path.exists(full_path):
+                self.send_response(404)
+                self.send_header('Content-type', 'application/json')
+                self.end_headers()
+                self.wfile.write(json.dumps({"error": "File not found"}).encode())
+                return
+            
+            # Security check: ensure file is an audio file and within book1 directory
+            if not file_path.startswith('book1/') or not any(file_path.lower().endswith(ext) for ext in ['.mp3', '.wav', '.ogg', '.m4a', '.flac']):
+                self.send_response(403)
+                self.send_header('Content-type', 'application/json')
+                self.end_headers()
+                self.wfile.write(json.dumps({"error": "Access denied"}).encode())
+                return
+            
+            # Delete the file
+            os.remove(full_path)
+            
+            # Update the audio manifest
+            dir_path = os.path.dirname(full_path)
+            manifest_path = os.path.join(dir_path, 'audio_manifest.json')
+            filename = os.path.basename(full_path)
+            
+            if os.path.exists(manifest_path):
+                try:
+                    with open(manifest_path, 'r', encoding='utf-8') as f:
+                        manifest = json.load(f)
+                    
+                    if filename in manifest:
+                        manifest.remove(filename)
+                        
+                        with open(manifest_path, 'w', encoding='utf-8') as f:
+                            json.dump(manifest, f, indent=0, ensure_ascii=False)
+                except Exception as e:
+                    print(f"Warning: Could not update manifest: {e}")
+            
+            self.send_response(200)
+            self.send_header('Content-type', 'application/json')
+            self.end_headers()
+            self.wfile.write(json.dumps({"success": True, "message": f"File {filename} deleted successfully"}).encode())
+            
+        except Exception as e:
+            self.send_response(500)
+            self.send_header('Content-type', 'application/json')
+            self.end_headers()
+            self.wfile.write(json.dumps({"error": str(e)}).encode())
 
 if __name__ == "__main__":
     os.chdir(os.path.dirname(os.path.abspath(__file__)))

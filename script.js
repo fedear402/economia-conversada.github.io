@@ -331,11 +331,31 @@ class ChapterViewer {
                 const audioPlayerContainer = document.createElement('div');
                 audioPlayerContainer.className = 'audio-player-container';
                 
-                // Add audio file label
+                // Add audio file label with delete button
+                const audioLabelContainer = document.createElement('div');
+                audioLabelContainer.style.display = 'flex';
+                audioLabelContainer.style.justifyContent = 'space-between';
+                audioLabelContainer.style.alignItems = 'center';
+                audioLabelContainer.style.marginBottom = '8px';
+                
                 const audioLabel = document.createElement('div');
                 audioLabel.className = 'audio-label';
                 audioLabel.textContent = audioFile.displayName;
-                audioPlayerContainer.appendChild(audioLabel);
+                audioLabel.style.flex = '1';
+                
+                const deleteBtn = document.createElement('button');
+                deleteBtn.className = 'audio-delete-btn';
+                deleteBtn.innerHTML = '×';
+                deleteBtn.title = `Eliminar ${audioFile.name}`;
+                deleteBtn.style.marginLeft = '10px';
+                deleteBtn.onclick = (e) => {
+                    e.preventDefault();
+                    this.confirmDeleteAudioFromSection(audioFile, audioPlayerContainer, type, parentChapter);
+                };
+                
+                audioLabelContainer.appendChild(audioLabel);
+                audioLabelContainer.appendChild(deleteBtn);
+                audioPlayerContainer.appendChild(audioLabelContainer);
                 
                 // Create audio player
                 const audio = document.createElement('audio');
@@ -582,15 +602,33 @@ class ChapterViewer {
                         audioFiles.forEach(fileName => {
                             const fileSpan = document.createElement('span');
                             fileSpan.className = 'audio-file-item';
-                            fileSpan.textContent = fileName;
-                            fileSpan.title = `Haz clic para ir a ${section.title} - ${fileName}`;
+                            
+                            // Create filename span
+                            const fileNameSpan = document.createElement('span');
+                            fileNameSpan.className = 'audio-file-name';
+                            fileNameSpan.textContent = fileName;
+                            fileNameSpan.title = `Haz clic para ir a ${section.title} - ${fileName}`;
                             
                             // Add click handler to navigate to the section
-                            fileSpan.onclick = (e) => {
+                            fileNameSpan.onclick = (e) => {
                                 e.preventDefault();
+                                e.stopPropagation();
                                 this.navigateToSectionFromTodo(chapter, section);
                             };
                             
+                            // Create delete button
+                            const deleteBtn = document.createElement('button');
+                            deleteBtn.className = 'audio-delete-btn';
+                            deleteBtn.innerHTML = '×';
+                            deleteBtn.title = `Eliminar ${fileName}`;
+                            deleteBtn.onclick = (e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                this.confirmDeleteAudio(chapter, section, fileName, fileSpan);
+                            };
+                            
+                            fileSpan.appendChild(fileNameSpan);
+                            fileSpan.appendChild(deleteBtn);
                             cell.appendChild(fileSpan);
                         });
                     }
@@ -692,6 +730,122 @@ class ChapterViewer {
         
         // Load the section content
         this.loadSection(chapter, section);
+    }
+
+    async confirmDeleteAudio(chapter, section, fileName, fileElement) {
+        const confirmMessage = `¿Estás seguro de que quieres eliminar el archivo de audio "${fileName}"?\n\nEsta acción no se puede deshacer.`;
+        
+        if (confirm(confirmMessage)) {
+            await this.deleteAudioFile(chapter, section, fileName, fileElement);
+        }
+    }
+
+    async confirmDeleteAudioFromSection(audioFile, containerElement, type, parentChapter) {
+        const confirmMessage = `¿Estás seguro de que quieres eliminar el archivo de audio "${audioFile.name}"?\n\nEsta acción no se puede deshacer.`;
+        
+        if (confirm(confirmMessage)) {
+            await this.deleteAudioFileFromSection(audioFile, containerElement, type, parentChapter);
+        }
+    }
+
+    async deleteAudioFile(chapter, section, fileName, fileElement) {
+        try {
+            const filePath = `book1/${chapter.id}/${section.id}/${fileName}`;
+            const response = await fetch(`/api/delete-audio/${filePath}`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            const result = await response.json();
+
+            if (response.ok) {
+                // Remove the file element from the UI
+                fileElement.remove();
+                
+                // Update the cached audio manifest data
+                const sectionKey = `${chapter.id}-${section.id}`;
+                if (this.audioManifestData[sectionKey]) {
+                    const index = this.audioManifestData[sectionKey].indexOf(fileName);
+                    if (index > -1) {
+                        this.audioManifestData[sectionKey].splice(index, 1);
+                    }
+                }
+                
+                console.log(`✅ Deleted audio file: ${fileName}`);
+                
+                // Check if this was the last audio file in the cell
+                const cell = fileElement.parentElement;
+                const remainingAudioFiles = cell.querySelectorAll('.audio-file-item');
+                if (remainingAudioFiles.length === 0) {
+                    // Check if there are character names
+                    const characterNames = cell.querySelector('.character-names');
+                    if (!characterNames) {
+                        cell.textContent = '—';
+                        cell.className += ' empty';
+                        cell.title = 'No hay archivos de audio ni personajes';
+                    }
+                }
+                
+                // Update status summary
+                this.updateTodoSummary();
+                
+            } else {
+                alert(`Error al eliminar el archivo: ${result.error}`);
+                console.error('Delete failed:', result.error);
+            }
+        } catch (error) {
+            alert(`Error al eliminar el archivo: ${error.message}`);
+            console.error('Delete error:', error);
+        }
+    }
+
+    async deleteAudioFileFromSection(audioFile, containerElement, type, parentChapter) {
+        try {
+            const response = await fetch(`/api/delete-audio/${audioFile.path}`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            const result = await response.json();
+
+            if (response.ok) {
+                // Remove the container element from the UI
+                containerElement.remove();
+                
+                console.log(`✅ Deleted audio file: ${audioFile.name}`);
+                
+                // Reload the current section/chapter to refresh the view
+                if (this.currentSection && parentChapter) {
+                    this.loadSection(parentChapter, this.currentSection);
+                } else if (this.currentChapter) {
+                    this.loadChapter(this.currentChapter);
+                }
+                
+            } else {
+                alert(`Error al eliminar el archivo: ${result.error}`);
+                console.error('Delete failed:', result.error);
+            }
+        } catch (error) {
+            alert(`Error al eliminar el archivo: ${error.message}`);
+            console.error('Delete error:', error);
+        }
+    }
+
+    updateTodoSummary() {
+        // Update the summary at the bottom of the To-Do table if it exists
+        const statusDiv = document.querySelector('.todo-content-view .audio-todo-table')?.parentElement?.querySelector('div[style*="text-align: center"]');
+        if (statusDiv) {
+            const totalAudioFiles = Object.values(this.audioManifestData).reduce((sum, files) => sum + files.length, 0);
+            const totalCharacterSections = Object.keys(this.characterData).length;
+            const maxSections = Math.max(...this.bookStructure.chapters.map(ch => 
+                ch.sections ? ch.sections.length : 0
+            ));
+            statusDiv.innerHTML = `📊 Total: ${totalAudioFiles} archivos de audio | ${totalCharacterSections} secciones con personajes | ${maxSections} secciones en ${this.bookStructure.chapters.length} capítulos`;
+        }
     }
 
     renderTodoError() {

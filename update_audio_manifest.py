@@ -22,8 +22,16 @@ from typing import List, Set
 # Supported audio file extensions
 AUDIO_EXTENSIONS = {'.mp3', '.wav', '.m4a', '.ogg', '.flac'}
 
-def find_audio_files(directory: Path) -> List[str]:
-    """Find all audio files in a directory and return their filenames."""
+def find_audio_files(directory: Path, delete_wav: bool = False) -> List[str]:
+    """Find all audio files in a directory and return their filenames.
+    
+    Args:
+        directory: Path to the directory to scan
+        delete_wav: If True, delete all .wav files found
+    
+    Returns:
+        List of audio filenames (excluding deleted .wav files)
+    """
     audio_files = []
     
     if not directory.exists():
@@ -31,15 +39,24 @@ def find_audio_files(directory: Path) -> List[str]:
     
     for file in directory.iterdir():
         if file.is_file() and file.suffix.lower() in AUDIO_EXTENSIONS:
+            # Delete .wav files if requested
+            if delete_wav and file.suffix.lower() == '.wav':
+                try:
+                    file.unlink()
+                    print(f"  Deleted WAV file: {file.name}")
+                except OSError as e:
+                    print(f"  Warning: Could not delete {file.name}: {e}")
+                continue  # Don't add deleted files to the list
+            
             audio_files.append(file.name)
     
     # Sort for consistent ordering
     return sorted(audio_files)
 
-def update_audio_manifest(directory: Path, dry_run: bool = False) -> bool:
+def update_audio_manifest(directory: Path, dry_run: bool = False, delete_wav: bool = False) -> bool:
     """Update the audio_manifest.json file in the given directory."""
     manifest_path = directory / 'audio_manifest.json'
-    audio_files = find_audio_files(directory)
+    audio_files = find_audio_files(directory, delete_wav and not dry_run)
     
     # Read existing manifest if it exists
     existing_manifest = []
@@ -73,7 +90,7 @@ def update_audio_manifest(directory: Path, dry_run: bool = False) -> bool:
         print(f"Error: Could not write to {manifest_path}: {e}")
         return False
 
-def scan_book_directory(book_path: Path, dry_run: bool = False) -> dict:
+def scan_book_directory(book_path: Path, dry_run: bool = False, delete_wav: bool = False) -> dict:
     """Scan the entire book directory and update all audio manifests."""
     stats = {
         'updated': 0,
@@ -88,6 +105,8 @@ def scan_book_directory(book_path: Path, dry_run: bool = False) -> dict:
     
     print(f"Scanning book directory: {book_path}")
     print(f"Mode: {'DRY RUN' if dry_run else 'LIVE UPDATE'}")
+    if delete_wav:
+        print("WAV file deletion: ENABLED")
     print("-" * 50)
     
     # Find all directories that should have audio manifests
@@ -102,7 +121,7 @@ def scan_book_directory(book_path: Path, dry_run: bool = False) -> dict:
         # Update chapter-level audio manifest
         stats['total_folders'] += 1
         try:
-            if update_audio_manifest(chapter_dir, dry_run):
+            if update_audio_manifest(chapter_dir, dry_run, delete_wav):
                 stats['updated'] += 1
             else:
                 stats['unchanged'] += 1
@@ -119,7 +138,7 @@ def scan_book_directory(book_path: Path, dry_run: bool = False) -> dict:
             stats['total_folders'] += 1
             
             try:
-                if update_audio_manifest(section_dir, dry_run):
+                if update_audio_manifest(section_dir, dry_run, delete_wav):
                     stats['updated'] += 1
                 else:
                     stats['unchanged'] += 1
@@ -134,7 +153,7 @@ def scan_book_directory(book_path: Path, dry_run: bool = False) -> dict:
             stats['total_folders'] += 1
             
             try:
-                if update_audio_manifest(special_dir, dry_run):
+                if update_audio_manifest(special_dir, dry_run, delete_wav):
                     stats['updated'] += 1
                 else:
                     stats['unchanged'] += 1
@@ -164,13 +183,19 @@ def main():
         help='Path to the book directory (default: ./book1)'
     )
     
+    parser.add_argument(
+        '--delete-wav',
+        action='store_true',
+        help='Delete all .wav files found during the scan'
+    )
+    
     args = parser.parse_args()
     
     # Make sure we're working with absolute paths
     book_path = args.book_path.resolve()
     
     # Run the scan
-    stats = scan_book_directory(book_path, args.dry_run)
+    stats = scan_book_directory(book_path, args.dry_run, args.delete_wav)
     
     # Print summary
     print("\n" + "=" * 50)
