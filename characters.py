@@ -1,75 +1,66 @@
-import re
-from pathlib import Path
-import sys
 
-HEX     = re.compile(r"\\'([0-9A-Fa-f]{2})")          #  \'e1  →  á
-UNICODE = re.compile(r"\\u(-?\d+)\?")                 #  \u225? → ñ   (if present)
-CTRL    = re.compile(r"\\[a-z]+\d* ?")                #  \par, \hich, \f44 …
-BRACES  = re.compile(r"[{}]")                         #  strip all leftover braces
-
-def rtf2plain(raw: str, *, encoding="latin-1") -> str:
-    """Very quick & dirty ‘RTF → visible text’ converter."""
-    # 1) decode hex escapes  (works for Win-1252 Spanish RTFs)
-    raw = HEX.sub(lambda m: bytes.fromhex(m.group(1)).decode(encoding), raw)
-
-    # 2) decode \uNNNN? escapes  (if your generator emits them)
-    def _u(m):
-        codepoint = int(m.group(1))
-        if codepoint < 0:                         # RTF stores high BMP as negative
-            codepoint += 65536
-        return chr(codepoint)
-    raw = UNICODE.sub(_u, raw)
-
-    # 3) mark paragraph ends → real newlines
-    raw = raw.replace(r"\par", "\n")
-
-    # 4) kill all other control words & braces
-    raw = CTRL.sub("", raw)
-    raw = BRACES.sub("", raw)
-
-    # 5) collapse weird white-space runs
-    raw = re.sub(r"[ \t\r\f\v]+", " ", raw)
-    raw = re.sub(r"\n\s+", "\n", raw)
-
-    return raw.strip()
-
-
-# compile **once** – it’s fast & readable
-NAME_RE = re.compile(
-    r"""^_?            # some editors wrap italics with underscore
-        (?P<name>      #  ← we keep this
-         [A-ZÁÉÍÓÚÜÑ]  #  capital letter incl. accents
-         [\wÁÉÍÓÚÜÑáéíóúüñ\-\.]*  #  rest of first token
-         (?:\s+
-          [A-ZÁÉÍÓÚÜÑ][\wÁÉÍÓÚÜÑáéíóúüñ\-\.]*)*  # optional 2nd/3rd token
-        )
-        _?             # closing underscore if any
-        \s*:           # literal colon
-     """,
-    re.VERBOSE | re.MULTILINE,
-)
-
-def extract_speakers_from_text(txt: str) -> list[str]:
-    seen, ordered = set(), []
-    for m in NAME_RE.finditer(txt):
-        nm = m.group("name")
-        if nm not in seen:
-            seen.add(nm)
-            ordered.append(nm)
-    return ordered
+character_voices = {
+    'introduction':"enceladus",
+    'book-name': "enceladus",
+    'author': "enceladus",
+    'chapter-title': "enceladus",
+    'synopsis':"enceladus",
+    'chapter-beginning': "zephyr",
+    'section-description': "zephyr",
+    'section-title':"zephyr",
+    'Sócrates': 'algieba',
+    'Glaucón': 'orus',
+    'Teofrasto': 'achird',
+    'Aristóteles': 'algenib',
+    'Entrevistador': "enceladus",
+    'Adam Smith': 'gacrux',
+    'Entrevistadora': 'zephyr',
+    'John Nash': 'orus',
+    'Jean Tirole': 'gacrux',
+    'Thomas Philippon': 'charon',
+    'George Akerlof': 'autonoe',
+    'Ronald Coase': 'orus',
+    'Moderadora': 'leda',
+    'Joseph Stiglitz': 'gacrux',
+    'Frédéric Bastiat': 'autonoe',
+    'Gary Becker': 'gacrux',
+    'Presentadora': 'sulafat',
+    'Ernesto Schargrodsky': 'charon',
+    'Miembro de la Audiencia': 'rasalgethi',
+    'Joseph Schumpeter': 'orus',
+    'Karl Marx': 'zubenelgenubi',
+    'Milton Friedman': 'autonoe',
+    'Rafael Di Tella': 'fenrir',
+    'Moderador': 'charon',
+    'Elinor Ostrom': 'leda',
+    'Yuval Noah Harari': 'umbriel'
+}
 
 
-if __name__ == "__main__":
-    try:
-        rtf_path = Path(sys.argv[1])
-    except IndexError:
-        sys.exit("usage: python characters.py <file.rtf>")
-
-    raw_rtf   = rtf_path.read_text(encoding="latin-1")  # switch to utf-8 if needed
-    plain_txt = rtf2plain(raw_rtf)                      # step ①
-    speakers  = extract_speakers_from_text(plain_txt)   # step ②
-    print(speakers)
-    
-    
-    
-# ['Sócrates', 'Glaucón', 'Teofrasto', 'Aristóteles', 'Entrevistador', 'Adam Smith', 'Entrevistadora', 'John Nash', 'Jean Tirole', 'Thomas Philippon', 'George Akerlof', 'Ronald Coase', 'Moderadora', 'Joseph Stiglitz', 'Frédéric Bastiat', 'Gary Becker', 'Presentadora', 'Ernesto Schargrodsky', 'Joseph Schumpeter', 'Karl Marx', 'Milton Friedman', 'Rafael Di Tella', 'Moderador', 'Elinor Ostrom', 'Yuval Noah Harari']
+character_description = {
+    "Sócrates": "un hombre mayor (aproximadamente 70 años) con una presencia vocal firme, experimentada y segura de sí mismo. Su voz debe transmitir autoridad y una convicción serena. mantén un tono claro, educado, conversacional y realista en el dialecto español rioplatense (de Buenos Aires y Montevideo).",
+    "Glaucón": "más joven (alrededor de 22-25 años), con un tono reflexivo pero ansioso, y a veces vacilante, como si aún estuviera explorando sus pensamientos y aprendiendo de Sócrates. mantén un tono claro, educado, conversacional y realista en el dialecto español rioplatense (de Buenos Aires y Montevideo).",
+    "Teofrasto": "Hable como un filósofo y botánico de la antigua Grecia (alrededor de 60 años). Su voz es madura y reflexiva, con un tono autoritario pero sereno. Su dicción es clara y erudita, como un maestro que comparte sus observaciones y conocimientos con sus discípulos. mantén un tono claro, educado, conversacional y realista en el dialecto español rioplatense (de Buenos Aires y Montevideo).",
+    "Aristóteles": "Interprete a un eminente filósofo de la antigua Grecia (alrededor de 60 años). Su voz es madura y profunda, con un tono autoritario y didáctico. Habla con gran claridad y una cadencia rítmica, como si estuviera exponiendo sus teorías con rigor lógico y calma. mantén un tono claro, educado, conversacional y realista en el dialecto español rioplatense (de Buenos Aires y Montevideo).",
+    "Adam Smith": "Hable como un respetado anciano de la economía (unos 70 años) con un tono seguro, bien informado y accesible. Su voz debe transmitir la autoridad de un pionero, pero seguir siendo clara y atractiva, como si explicara ideas complejas a un estudiante brillante. mantén un tono claro, educado, conversacional y realista en el dialecto español rioplatense (de Buenos Aires y Montevideo).",
+    "Entrevistadora": "Interprete a una entrevistadora enérgica y brillante (unos 30 años) con un tono claro y alegre. Su voz debe sonar positiva y atractiva, perfecta para una discusión animada. mantén un tono claro, educado, conversacional y realista en el dialecto español rioplatense (de Buenos Aires y Montevideo).",
+    "John Nash": "Interprete a un hombre maduro y reflexivo (unos 65 años). Su voz es grave, resonante y mesurada, lo que refleja una profunda sabiduría y una vida de pensamiento profundo. Habla con calma, a un ritmo deliberado, como si compartiera ideas obtenidas con gran esfuerzo. mantén un tono claro, educado, conversacional y realista en el dialecto español rioplatense (de Buenos Aires y Montevideo).",
+    "Jean Tirole": "Encarnar a un erudito moderno e influyente (unos 65 años). Su voz es segura y autoritaria, pero también clara y elocuente. Habla con la seguridad de un premio Nobel, haciendo que los conceptos económicos complejos parezcan importantes y comprensibles. mantén un tono claro, educado, conversacional y realista en el dialecto español rioplatense (de Buenos Aires y Montevideo).",
+    "Thomas Philippon": "Hable como un economista y figura pública contemporánea (unos 50 años). Su voz debe ser suave, conversacional y confiable, con una autoridad amable. Suena como un experto bien informado que también es un gran invitado de podcast. mantén un tono claro, educado, conversacional y realista en el dialecto español rioplatense (de Buenos Aires y Montevideo).",
+    "George Akerlof": "Interprete a un académico sabio y experimentado (unos 80 años). Su voz es grave, resonante y transmite una inmensa sabiduría y experiencia. Habla a un ritmo tranquilo y mesurado, como si reflexionara sobre toda una vida de trabajo innovador. mantén un tono claro, educado, conversacional y realista en el dialecto español rioplatense (de Buenos Aires y Montevideo).",
+    "Ronald Coase": "Encarnar a una figura venerada y reflexiva (unos 90 años). Su voz es grave, resonante y tranquila, lo que refleja una inmensa sabiduría y un ritmo deliberado. Habla con el peso de alguien que cambió fundamentalmente el campo de la economía. mantén un tono claro, educado, conversacional y realista en el dialecto español rioplatense (de Buenos Aires y Montevideo).",
+    "Moderadora": "Actúe como una moderadora profesional y serena (unos 40 años). Su voz debe ser de tono medio con una resonancia ligeramente más baja, lo que transmite autoridad y calma. Es elocuente y mesurada, guiando una discusión formal. mantén un tono claro, educado, conversacional y realista en el dialecto español rioplatense (de Buenos Aires y Montevideo).",
+    "Joseph Stiglitz": "Hable como un distinguido premio Nobel (unos 75 años). Su voz es suave, segura y autoritaria, pero también accesible. Proyecta la experiencia y el conocimiento de una figura pública importante en la economía. mantén un tono claro, educado, conversacional y realista en el dialecto español rioplatense (de Buenos Aires y Montevideo).",
+    "Frédéric Bastiat": "Interprete a un pensador profundo del siglo XIX (unos 45 años). Su voz es grave, resonante y reflexiva, con un ritmo tranquilo y mesurado. Habla con la convicción y la sabiduría de un filósofo cuyas ideas son atemporales. mantén un tono claro, educado, conversacional y realista en el dialecto español rioplatense (de Buenos Aires y Montevideo).",
+    "Gary Becker": "Encarnar a un erudito influyente y de amplio espectro (unos 70 años). Su voz debe ser segura, autoritaria y clara. Habla con la seguridad de alguien que amplió los límites del pensamiento económico. mantén un tono claro, educado, conversacional y realista en el dialecto español rioplatense (de Buenos Aires y Montevideo).",
+    "Presentadora": "Interprete a una presentadora profesional y persuasiva (unos 35 años). Su voz es cálida, segura y clara, con un sonido elocuente y atractivo. Proyecta inteligencia y amabilidad mientras transmite información de manera efectiva. mantén un tono claro, educado, conversacional y realista en el dialecto español rioplatense (de Buenos Aires y Montevideo).",
+    "Ernesto Schargrodsky": "Interprete a un académico contemporáneo (unos 55 años). Su voz es suave, conversacional y segura. Habla con la amable autoridad de un investigador, haciendo accesibles los temas complejos. mantén un tono claro, educado, conversacional y realista en el dialecto español rioplatense (de Buenos Aires y Montevideo).",
+    "Miembro de la Audiencia": "Interprete a un miembro del público curioso y un poco nervioso (entre 30 y 40 años). La voz es conversacional con una cualidad ligeramente nasal e inquisitiva, como si hiciera una pregunta reflexiva pero tentativa durante una sesión de preguntas y respuestas. mantén un tono claro, educado, conversacional y realista en el dialecto español rioplatense (de Buenos Aires y Montevideo).",
+    "Joseph Schumpeter": "Encarnar a un teórico económico histórico (unos 55 años). Su voz es grave, resonante y reflexiva, lo que transmite el peso intelectual y la importancia histórica de sus ideas. mantén un tono claro, educado, conversacional y realista en el dialecto español rioplatense (de Buenos Aires y Montevideo).",
+    "Karl Marx": "Hable como un teórico y filósofo revolucionario (unos 50 años). Su voz es grave y resonante, transmitiendo una fuerte autoridad y seriedad. Habla con una entonación poderosa y mesurada que llama la atención. mantén un tono claro, educado, conversacional y realista en el dialecto español rioplatense (de Buenos Aires y Montevideo).",
+    "Milton Friedman": "Interprete a una figura pública muy influyente (unos 80 años). Su voz es grave, resonante y reflexiva, lo que transmite una inmensa sabiduría y un ritmo tranquilo y deliberado. Habla con la convicción de una figura importante del pensamiento del siglo XX. mantén un tono claro, educado, conversacional y realista en el dialecto español rioplatense (de Buenos Aires y Montevideo).",
+    "Rafael Di Tella": "Encarnar a un académico moderno y accesible (unos 55 años). Su voz es amable, clara y conversacional, lo que lo hace sonar bien informado y fácil de escuchar, como si fuera un gran anfitrión de podcast. mantén un tono claro, educado, conversacional y realista en el dialecto español rioplatense (de Buenos Aires y Montevideo).",
+    "Moderador": "Actúe como presentador de una discusión intelectual seria. Su voz debe ser suave, segura y accesible, con una autoridad amable para guiar la conversación y dialogar con varios participantes. mantén un tono claro, educado, conversacional y realista en el dialecto español rioplatense (de Buenos Aires y Montevideo).",
+    "Elinor Ostrom": "Interprete a una premio Nobel serena y profesional (unos 75 años). Su voz debe ser tranquila, elocuente y confiable, con una resonancia ligeramente más baja que transmite autoridad y sofisticación intelectual. mantén un tono claro, educado, conversacional y realista en el dialecto español rioplatense (de Buenos Aires y Montevideo).",
+    "Yuval Noah Harari": "Hable como un historiador y figura pública contemporánea (unos 45 años). Su voz es suave, clara y autoritaria, pero también amable y atractiva, como si explicara el curso de la historia humana de una manera cautivadora e informada. mantén un tono claro, educado, conversacional y realista en el dialecto español rioplatense (de Buenos Aires y Montevideo)."
+}

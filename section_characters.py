@@ -10,7 +10,6 @@ import re
 from characters import character_description
 #find_speaking_characters("book1/C1/S7/main.txt")
 def find_speaking_characters(main_txt_path):
-    print("Hello")
     """
     Analyze a main.txt file to find speaking characters.
     Returns a list of characters that speak at least 3 times.
@@ -106,8 +105,8 @@ def main():
         sections = character_appearances[character]
     return character_sections
 
-section_characters = main()
-
+section_characters = {'C1/S5': ['Glaucón', 'Sócrates'], 'C1/S2': ['Glaucón', 'Sócrates'], 'C1/S3': ['Sócrates', 'Glaucón'], 'C1/S4': ['Sócrates', 'Glaucón'], 'C1/S1': ['Sócrates', 'Glaucón'], 'C1/S6': ['Glaucón', 'Sócrates'], 'C1/S7': ['Teofrasto', 'Aristóteles'], 'C6/S5': ['Presentadora', 'Yuval Noah Harari'], 'C6/S2': ['Moderador', 'Elinor Ostrom'], 'C6/S3': ['Glaucón', 'Sócrates'], 'C6/S4': ['Glaucón', 'Sócrates'], 'C6/S1': ['Entrevistadora', 'Rafael Di Tella'], 'C3/S5': ['Glaucón', 'Sócrates'], 'C3/S2': ['Glaucón', 'Sócrates'], 'C3/S3': ['Glaucón', 'Sócrates'], 'C3/S4': ['Entrevistadora', 'John Nash'], 'C3/S10': ['Entrevistadora', 'Thomas Philippon'], 'C3/S8': ['Glaucón', 'Sócrates'], 'C3/S1': ['Glaucón', 'Sócrates'], 'C3/S6': ['Glaucón', 'Sócrates'], 'C3/S7': ['Glaucón', 'Sócrates'], 'C3/S9': ['Jean Tirole'], 'C4/S5': ['Sócrates', 'Glaucón'], 'C4/S2': ['George Akerlof'], 'C4/S3': ['Ronald Coase'], 'C4/S4': ['Sócrates', 'Glaucón'], 'C4/S10': ['Glaucón', 'Sócrates'], 'C4/S11': ['Presentadora', 'Ernesto Schargrodsky', 'Entrevistadora'], 'C4/S8': ['Gary Becker'], 'C4/S1': ['Glaucón', 'Sócrates'], 'C4/S6': ['Moderadora', 'Joseph Stiglitz'], 'C4/S7': ['Frédéric Bastiat'], 'C4/S9': ['Sócrates', 'Glaucón'], 'C5/S5': ['Moderadora', 'Milton Friedman'], 'C5/S2': ['Joseph Schumpeter'], 'C5/S3': ['Karl Marx'], 'C5/S4': ['Glaucón', 'Sócrates'], 'C5/S1': ['Glaucón', 'Sócrates'], 'C2/S5': ['Glaucón', 'Sócrates'], 'C2/S2': ['Sócrates', 'Glaucón'], 'C2/S3': ['Glaucón', 'Sócrates'], 'C2/S4': ['Glaucón', 'Sócrates'], 'C2/S8': ['Glaucón', 'Sócrates'], 'C2/S1': ['Sócrates', 'Glaucón'], 'C2/S6': ['Glaucón', 'Sócrates'], 'C2/S7': ['Adam Smith']}
+print(section_characters)
 
 
 

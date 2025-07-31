@@ -74,17 +74,23 @@ class ChapterViewer {
     async findAllAudioFiles(folderPath) {
     const manifestPath = `${folderPath}audio_manifest.json`;
     try {
-        const resp = await fetch(manifestPath);
+        const resp = await fetch(manifestPath, { cache: 'no-cache' }); // Disable caching
         if (resp.ok) {
-        const list = await resp.json();
-        return list.map(fn => ({
-            path: folderPath + fn,
-            name: fn,
-            displayName: this.formatAudioName(fn)
-        }));
+            const list = await resp.json();
+            console.log(`✅ Loaded manifest ${manifestPath}: ${list.length} files -`, list);
+            return list.map(fn => ({
+                path: folderPath + fn,
+                name: fn,
+                displayName: this.formatAudioName(fn)
+            }));
+        } else {
+            console.warn(`❌ Failed to load manifest ${manifestPath}: HTTP ${resp.status}`);
         }
-    } catch (_) { /* no manifest – fall back */ }
+    } catch (error) {
+        console.warn(`❌ Error loading manifest ${manifestPath}:`, error);
+    }
 
+    console.log(`⚪ No manifest found for ${folderPath}, using fallback`);
     return this.guessAudioFiles(folderPath);   // old brute-force (see option 2)
     }  
     formatAudioName(fileName) {
@@ -465,7 +471,8 @@ class ChapterViewer {
             <p>Esta tabla muestra todos los archivos de audio disponibles organizados por sección y capítulo. 
             Cada celda contiene los nombres de los archivos de audio que existen en esa combinación específica.</p>
             <p><strong>Filas:</strong> Secciones (S1, S2, S3, etc.) | <strong>Columnas:</strong> Capítulos (I, II, III, etc.)</p>
-            <button onclick="location.reload();" style="margin-top: 10px; padding: 5px 10px; background: #3498db; color: white; border: none; border-radius: 3px; cursor: pointer;">🔄 Recargar página si la tabla está vacía</button>
+            <button onclick="location.reload(true);" style="margin-top: 10px; padding: 5px 10px; background: #3498db; color: white; border: none; border-radius: 3px; cursor: pointer; margin-right: 10px;">🔄 Recargar página</button>
+            <button onclick="window.chapterViewer && window.chapterViewer.forceRefreshTodo();" style="margin-top: 10px; padding: 5px 10px; background: #e74c3c; color: white; border: none; border-radius: 3px; cursor: pointer;">🔄 Recargar solo tabla</button>
         `;
         todoView.appendChild(description);
         
@@ -615,6 +622,19 @@ class ChapterViewer {
         console.log(`Total audio files loaded: ${totalAudioFiles}`);
     }
 
+    async forceRefreshTodo() {
+        console.log('🔄 Force refreshing To-Do table...');
+        
+        // Clear cached audio manifest data
+        this.audioManifestData = {};
+        
+        // Reload all audio manifests
+        await this.loadAllAudioManifests();
+        
+        // Re-render the To-Do view
+        await this.renderTodoContent();
+    }
+
     navigateToSectionFromTodo(chapter, section) {
         console.log(`Navigating from To-Do to ${chapter.id}-${section.id}: ${section.title}`);
         
@@ -719,5 +739,5 @@ class ChapterViewer {
 
 // Initialize the chapter viewer when the page loads
 document.addEventListener('DOMContentLoaded', () => {
-    new ChapterViewer();
+    window.chapterViewer = new ChapterViewer();
 });
