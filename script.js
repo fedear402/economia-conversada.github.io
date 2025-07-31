@@ -795,14 +795,34 @@ class ChapterViewer {
         }
     }
 
-    markFileAsDeleted(filePath, fileName) {
+    async markFileAsDeleted(filePath, fileName) {
+        const timestamp = new Date().toISOString();
+        
+        // Store locally for immediate hiding
         this.deletedFiles[filePath] = {
-            deleted_at: new Date().toISOString(),
+            deleted_at: timestamp,
             reason: 'user_deleted',
             name: fileName
         };
         this.saveDeletedFiles();
-        console.log(`✅ Marked file as deleted: ${fileName} (stored in localStorage)`);
+        
+        // Also log to server (optional - doesn't affect functionality)
+        try {
+            await fetch('/api/log-deletion', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    filePath,
+                    fileName,
+                    timestamp
+                })
+            });
+            console.log(`✅ Marked file as deleted: ${fileName} (stored locally + logged to server)`);
+        } catch (error) {
+            console.log(`✅ Marked file as deleted: ${fileName} (stored locally, server logging failed)`);
+        }
     }
 
     isFileDeleted(filePath) {
@@ -813,8 +833,8 @@ class ChapterViewer {
         try {
             const filePath = `book1/${chapter.id}/${section.id}/${fileName}`;
             
-            // Mark file as deleted in localStorage
-            this.markFileAsDeleted(filePath, fileName);
+            // Mark file as deleted in localStorage + log to server
+            await this.markFileAsDeleted(filePath, fileName);
             
             // Remove the file element from the UI
             fileElement.remove();
@@ -852,8 +872,8 @@ class ChapterViewer {
 
     async deleteAudioFileFromSection(audioFile, containerElement, type, parentChapter) {
         try {
-            // Mark file as deleted in localStorage
-            this.markFileAsDeleted(audioFile.path, audioFile.name);
+            // Mark file as deleted in localStorage + log to server
+            await this.markFileAsDeleted(audioFile.path, audioFile.name);
             
             // Remove the container element from the UI
             containerElement.remove();
