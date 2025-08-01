@@ -6,6 +6,7 @@ class ChapterViewer {
         this.audioManifestData = {}; // Cache for audio manifest data
         this.characterData = {}; // Cache for character data
         this.deletedFiles = this.loadDeletedFiles(); // Track deleted files in localStorage
+        this.completedFiles = this.loadCompletedFiles(); // Track completed files in localStorage
         this.init();
     }
 
@@ -360,7 +361,7 @@ class ChapterViewer {
                 const audioPlayerContainer = document.createElement('div');
                 audioPlayerContainer.className = 'audio-player-container';
                 
-                // Add audio file label with delete button
+                // Add audio file label with completion checkbox and delete button
                 const audioLabelContainer = document.createElement('div');
                 audioLabelContainer.style.display = 'flex';
                 audioLabelContainer.style.justifyContent = 'space-between';
@@ -372,18 +373,59 @@ class ChapterViewer {
                 audioLabel.textContent = audioFile.displayName;
                 audioLabel.style.flex = '1';
                 
+                // Check if file is completed
+                const isCompleted = this.isFileCompleted(audioFile.path);
+                if (isCompleted) {
+                    audioLabel.style.color = '#27ae60';
+                    audioLabel.style.fontWeight = 'bold';
+                }
+                
+                const controlsContainer = document.createElement('div');
+                controlsContainer.style.display = 'flex';
+                controlsContainer.style.alignItems = 'center';
+                controlsContainer.style.gap = '8px';
+                
+                // Add completion checkbox
+                const completionCheckbox = document.createElement('input');
+                completionCheckbox.type = 'checkbox';
+                completionCheckbox.checked = isCompleted;
+                completionCheckbox.title = `Marcar como ${isCompleted ? 'no completado' : 'completado'}`;
+                completionCheckbox.style.transform = 'scale(1.2)';
+                completionCheckbox.style.cursor = 'pointer';
+                completionCheckbox.onchange = (e) => {
+                    const isNowCompleted = e.target.checked;
+                    this.markFileAsCompleted(audioFile.path, audioFile.name, isNowCompleted);
+                    
+                    // Update visual feedback
+                    if (isNowCompleted) {
+                        audioLabel.style.color = '#27ae60';
+                        audioLabel.style.fontWeight = 'bold';
+                        e.target.title = 'Marcar como no completado';
+                    } else {
+                        audioLabel.style.color = '';
+                        audioLabel.style.fontWeight = '';
+                        e.target.title = 'Marcar como completado';
+                    }
+                    
+                    // Update To-Do view if currently visible
+                    if (document.querySelector('.todo-content-view')) {
+                        this.updateTodoCompletionStyles();
+                    }
+                };
+                
                 const deleteBtn = document.createElement('button');
                 deleteBtn.className = 'audio-delete-btn';
                 deleteBtn.innerHTML = '×';
                 deleteBtn.title = `Eliminar ${audioFile.name}`;
-                deleteBtn.style.marginLeft = '10px';
                 deleteBtn.onclick = (e) => {
                     e.preventDefault();
                     this.confirmDeleteAudioFromSection(audioFile, audioPlayerContainer, type, parentChapter);
                 };
                 
                 audioLabelContainer.appendChild(audioLabel);
-                audioLabelContainer.appendChild(deleteBtn);
+                controlsContainer.appendChild(completionCheckbox);
+                controlsContainer.appendChild(deleteBtn);
+                audioLabelContainer.appendChild(controlsContainer);
                 audioPlayerContainer.appendChild(audioLabelContainer);
                 
                 // Create audio player
@@ -641,6 +683,13 @@ class ChapterViewer {
                             fileNameSpan.textContent = fileName;
                             fileNameSpan.title = `Haz clic para ir a ${section.title} - ${fileName}`;
                             
+                            // Check if file is completed and apply green styling
+                            const filePath = `book1/${chapter.id}/${section.id}/${fileName}`;
+                            if (this.isFileCompleted(filePath)) {
+                                fileNameSpan.style.color = '#27ae60';
+                                fileNameSpan.style.fontWeight = 'bold';
+                            }
+                            
                             // Add click handler to navigate to the section
                             fileNameSpan.onclick = (e) => {
                                 e.preventDefault();
@@ -708,12 +757,13 @@ class ChapterViewer {
         // Add summary info
         const totalAudioFiles = Object.values(this.audioManifestData).reduce((sum, files) => sum + files.length, 0);
         const totalCharacterSections = Object.keys(this.characterData).length;
+        const totalCompletedFiles = Object.keys(this.completedFiles).length;
         const statusDiv = document.createElement('div');
         statusDiv.style.textAlign = 'center';
         statusDiv.style.padding = '10px';
         statusDiv.style.color = '#666';
         statusDiv.style.fontSize = '0.9em';
-        statusDiv.innerHTML = `Total: ${totalAudioFiles} archivos de audio | ${totalCharacterSections} secciones con personajes | ${maxSections} secciones en ${this.bookStructure.chapters.length} capítulos`;
+        statusDiv.innerHTML = `Total: ${totalAudioFiles} archivos de audio | ${totalCompletedFiles} completados | ${totalCharacterSections} secciones con personajes | ${maxSections} secciones en ${this.bookStructure.chapters.length} capítulos`;
         
         // Insert after table
         table.parentElement.appendChild(statusDiv);
@@ -721,6 +771,38 @@ class ChapterViewer {
         console.log(`To-Do table rendered with ${maxSections} section rows and ${this.bookStructure.chapters.length} chapter columns`);
         console.log(`Total audio files loaded: ${totalAudioFiles}`);
         console.log(`Total character sections loaded: ${totalCharacterSections}`);
+    }
+
+    updateTodoCompletionStyles() {
+        // Update completion styles in the To-Do table
+        const audioFileNames = document.querySelectorAll('.audio-file-name');
+        audioFileNames.forEach(fileNameSpan => {
+            const fileName = fileNameSpan.textContent;
+            // Find the file path by looking at parent structure
+            const cell = fileNameSpan.closest('td');
+            const row = cell.parentElement;
+            const sectionCell = row.querySelector('.section-name-cell');
+            const sectionNumber = sectionCell.textContent; // e.g., "S1"
+            
+            // Get chapter from column position
+            const cellIndex = Array.from(row.children).indexOf(cell);
+            const headerRow = document.querySelector('.audio-todo-table thead tr');
+            const chapterHeaders = Array.from(headerRow.children).slice(1); // Skip first column
+            const chapterTitle = chapterHeaders[cellIndex - 1]?.textContent;
+            
+            // Find chapter ID from title
+            const chapter = this.bookStructure.chapters.find(ch => ch.title === chapterTitle);
+            if (chapter) {
+                const filePath = `book1/${chapter.id}/${sectionNumber}/${fileName}`;
+                if (this.isFileCompleted(filePath)) {
+                    fileNameSpan.style.color = '#27ae60';
+                    fileNameSpan.style.fontWeight = 'bold';
+                } else {
+                    fileNameSpan.style.color = '';
+                    fileNameSpan.style.fontWeight = '';
+                }
+            }
+        });
     }
 
     async forceRefreshTodo() {
@@ -790,6 +872,24 @@ class ChapterViewer {
         }
     }
 
+    loadCompletedFiles() {
+        try {
+            const completed = localStorage.getItem('completedAudioFiles');
+            return completed ? JSON.parse(completed) : {};
+        } catch (error) {
+            console.warn('Could not load completed files from localStorage:', error);
+            return {};
+        }
+    }
+
+    saveCompletedFiles() {
+        try {
+            localStorage.setItem('completedAudioFiles', JSON.stringify(this.completedFiles));
+        } catch (error) {
+            console.warn('Could not save completed files to localStorage:', error);
+        }
+    }
+
     saveDeletedFiles() {
         try {
             localStorage.setItem('deletedAudioFiles', JSON.stringify(this.deletedFiles));
@@ -814,6 +914,23 @@ class ChapterViewer {
 
     isFileDeleted(filePath) {
         return this.deletedFiles.hasOwnProperty(filePath);
+    }
+
+    markFileAsCompleted(filePath, fileName, isCompleted) {
+        if (isCompleted) {
+            this.completedFiles[filePath] = {
+                completed_at: new Date().toISOString(),
+                name: fileName
+            };
+        } else {
+            delete this.completedFiles[filePath];
+        }
+        this.saveCompletedFiles();
+        console.log(`Marked file as ${isCompleted ? 'completed' : 'not completed'}: ${fileName}`);
+    }
+
+    isFileCompleted(filePath) {
+        return this.completedFiles.hasOwnProperty(filePath);
     }
 
     async deleteAudioFile(chapter, section, fileName, fileElement) {
@@ -884,10 +1001,11 @@ class ChapterViewer {
         if (statusDiv) {
             const totalAudioFiles = Object.values(this.audioManifestData).reduce((sum, files) => sum + files.length, 0);
             const totalCharacterSections = Object.keys(this.characterData).length;
+            const totalCompletedFiles = Object.keys(this.completedFiles).length;
             const maxSections = Math.max(...this.bookStructure.chapters.map(ch => 
                 ch.sections ? ch.sections.length : 0
             ));
-            statusDiv.innerHTML = `Total: ${totalAudioFiles} archivos de audio | ${totalCharacterSections} secciones con personajes | ${maxSections} secciones en ${this.bookStructure.chapters.length} capítulos`;
+            statusDiv.innerHTML = `Total: ${totalAudioFiles} archivos de audio | ${totalCompletedFiles} completados | ${totalCharacterSections} secciones con personajes | ${maxSections} secciones en ${this.bookStructure.chapters.length} capítulos`;
         }
     }
 
