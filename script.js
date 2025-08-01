@@ -410,10 +410,10 @@ class ChapterViewer {
                 const isNotCompleted = this.isFileNotCompleted && this.isFileNotCompleted(audioFile.path);
                 
                 if (isCompleted) {
-                    audioLabel.style.color = '#27ae60';
+                    audioLabel.style.color = '#00C851';
                     audioLabel.style.fontWeight = 'bold';
                 } else if (isNotCompleted) {
-                    audioLabel.style.color = '#e74c3c';
+                    audioLabel.style.color = '#CC0000';
                     audioLabel.style.fontWeight = 'bold';
                 }
                 
@@ -443,13 +443,13 @@ class ChapterViewer {
                 
                 // Set initial styles based on current state
                 if (isCompleted) {
-                    okLabel.style.backgroundColor = '#27ae60';
+                    okLabel.style.backgroundColor = '#00C851';
                     okLabel.style.color = 'white';
                     okLabel.style.fontWeight = 'bold';
                     notOkLabel.style.color = '#666';
                     notOkLabel.style.backgroundColor = 'transparent';
                 } else if (isNotCompleted) {
-                    notOkLabel.style.backgroundColor = '#e74c3c';
+                    notOkLabel.style.backgroundColor = '#CC0000';
                     notOkLabel.style.color = 'white';
                     notOkLabel.style.fontWeight = 'bold';
                     okLabel.style.color = '#666';
@@ -469,9 +469,9 @@ class ChapterViewer {
                     }
                     
                     // Update visual feedback
-                    audioLabel.style.color = '#27ae60';
+                    audioLabel.style.color = '#00C851';
                     audioLabel.style.fontWeight = 'bold';
-                    okLabel.style.backgroundColor = '#27ae60';
+                    okLabel.style.backgroundColor = '#00C851';
                     okLabel.style.color = 'white';
                     okLabel.style.fontWeight = 'bold';
                     notOkLabel.style.backgroundColor = 'transparent';
@@ -518,9 +518,9 @@ class ChapterViewer {
                     this.markFileAsNotCompleted(audioFile.path, audioFile.name, true);
                     
                     // Update visual feedback
-                    audioLabel.style.color = '#e74c3c';
+                    audioLabel.style.color = '#CC0000';
                     audioLabel.style.fontWeight = 'bold';
-                    notOkLabel.style.backgroundColor = '#e74c3c';
+                    notOkLabel.style.backgroundColor = '#CC0000';
                     notOkLabel.style.color = 'white';
                     notOkLabel.style.fontWeight = 'bold';
                     okLabel.style.backgroundColor = 'transparent';
@@ -801,10 +801,10 @@ class ChapterViewer {
                             const isNotCompleted = this.isFileNotCompleted && this.isFileNotCompleted(filePath);
                             
                             if (isCompleted) {
-                                fileNameSpan.style.color = '#27ae60';
+                                fileNameSpan.style.color = '#00C851';
                                 fileNameSpan.style.fontWeight = 'bold';
                             } else if (isNotCompleted) {
-                                fileNameSpan.style.color = '#e74c3c';
+                                fileNameSpan.style.color = '#CC0000';
                                 fileNameSpan.style.fontWeight = 'bold';
                             }
                             
@@ -916,10 +916,10 @@ class ChapterViewer {
                 const isNotCompleted = this.isFileNotCompleted && this.isFileNotCompleted(filePath);
                 
                 if (isCompleted) {
-                    fileNameSpan.style.color = '#27ae60';
+                    fileNameSpan.style.color = '#00C851';
                     fileNameSpan.style.fontWeight = 'bold';
                 } else if (isNotCompleted) {
-                    fileNameSpan.style.color = '#e74c3c';
+                    fileNameSpan.style.color = '#CC0000';
                     fileNameSpan.style.fontWeight = 'bold';
                 } else {
                     fileNameSpan.style.color = '';
