@@ -163,6 +163,7 @@ body {
     left: 250px;
     right: 0;
     max-width: 800px;
+    max-height: 50vh;
     background-color: #fff;
     border: 1px solid #ddd;
     border-radius: 0 0 6px 6px;
@@ -171,20 +172,21 @@ body {
     z-index: 100;
     margin: 0;
     transition: transform 0.3s ease;
-    overflow-x: auto;
+    overflow-y: auto;
 }
 
 .chapter-header::-webkit-scrollbar, .section-header::-webkit-scrollbar {
-    height: 4px;
+    width: 6px;
 }
 
 .chapter-header::-webkit-scrollbar-track, .section-header::-webkit-scrollbar-track {
     background: #f1f1f1;
+    border-radius: 3px;
 }
 
 .chapter-header::-webkit-scrollbar-thumb, .section-header::-webkit-scrollbar-thumb {
     background: #ccc;
-    border-radius: 2px;
+    border-radius: 3px;
 }
 
 .chapter-header::-webkit-scrollbar-thumb:hover, .section-header::-webkit-scrollbar-thumb:hover {
