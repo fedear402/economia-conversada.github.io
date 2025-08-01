@@ -118,20 +118,22 @@ class ChapterViewer {
             await this.loadBookStructure();
             console.log('Book structure loaded:', this.bookStructure);
             
-            // Load shared data with timeout - don't block the UI
-            const loadDataWithTimeout = Promise.race([
-                this.loadSharedData(),
-                new Promise(resolve => setTimeout(() => {
-                    console.warn('Shared data loading timed out, continuing with empty data');
-                    this.deletedFiles = {};
-                    this.completedFiles = {};
-                    this.fileComments = {};
-                    this.notCompletedFiles = {};
-                    resolve();
-                }, 3000))
-            ]);
-            
-            await loadDataWithTimeout;
+            // Load shared data with timeout - don't overwrite if successful
+            try {
+                await Promise.race([
+                    this.loadSharedData(),
+                    new Promise((resolve, reject) => setTimeout(() => {
+                        reject(new Error('Shared data loading timed out'));
+                    }, 5000))
+                ]);
+            } catch (error) {
+                console.warn('Shared data loading failed or timed out, using empty defaults:', error.message);
+                // Only set empty defaults if we don't already have data loaded
+                if (!this.deletedFiles) this.deletedFiles = {};
+                if (!this.completedFiles) this.completedFiles = {};
+                if (!this.fileComments) this.fileComments = {};
+                if (!this.notCompletedFiles) this.notCompletedFiles = {};
+            }
             console.log('Shared data loaded');
             
             await this.renderNavigation();
