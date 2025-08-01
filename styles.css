@@ -191,6 +191,16 @@ body {
     background: #999;
 }
 
+.chapter-header button, .section-header button {
+    transition: all 0.2s ease;
+}
+
+.chapter-header button:hover, .section-header button:hover {
+    background: #e9e9e9 !important;
+    border-color: #999 !important;
+    color: #333 !important;
+}
+
 .chapter-title, .section-title {
     font-size: 1.8em;
     color: #2c3e50;
