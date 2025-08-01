@@ -231,7 +231,11 @@ class ChapterViewer {
             // Filter out deleted files
             const filteredList = list.filter(fn => {
                 const filePath = folderPath + fn;
-                return !this.isFileDeleted(filePath);
+                const isDeleted = this.isFileDeleted(filePath);
+                if (isDeleted) {
+                    console.log(`Filtering out deleted file: ${filePath}`);
+                }
+                return !isDeleted;
             });
             
             console.log(`Filtered out ${list.length - filteredList.length} deleted files, showing ${filteredList.length}`);
@@ -1406,7 +1410,14 @@ class ChapterViewer {
     }
 
     isFileDeleted(filePath) {
-        return this.deletedFiles.hasOwnProperty(filePath);
+        const isDeleted = this.deletedFiles.hasOwnProperty(filePath);
+        if (filePath.includes('C1S7-main_1-compressed.mp3')) {
+            console.log(`Checking if deleted: ${filePath} -> ${isDeleted}`, {
+                deletedFilesKeys: Object.keys(this.deletedFiles),
+                deletedFiles: this.deletedFiles
+            });
+        }
+        return isDeleted;
     }
 
     async markFileAsCompleted(filePath, fileName, isCompleted) {
