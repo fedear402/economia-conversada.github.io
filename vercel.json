@@ -1,1 +1,10 @@
-{}
+{
+  "functions": {
+    "api/log-deletion.js": {
+      "runtime": "@vercel/node@2.15.10"
+    },
+    "api/get-deleted.js": {
+      "runtime": "@vercel/node@2.15.10"
+    }
+  }
+}
