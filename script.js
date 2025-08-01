@@ -4,6 +4,7 @@ class GitHubAPI {
         this.repo = 'economia-conversada.github.io'; // Your repo name
         this.branch = 'main';
         this.baseUrl = 'https://api.github.com';
+        this.fallbackStorage = true; // Use localStorage as fallback
     }
 
     async getFileContent(path) {
@@ -1129,25 +1130,37 @@ class ChapterViewer {
 
     async saveCompletedFiles() {
         try {
-            await this.githubApi.updateFile('completed_files.json', this.completedFiles, 'Update completed files');
+            const success = await this.githubApi.updateFile('completed_files.json', this.completedFiles, 'Update completed files');
+            if (!success) {
+                localStorage.setItem('completedAudioFiles', JSON.stringify(this.completedFiles));
+            }
         } catch (error) {
-            console.warn('Could not save completed files:', error);
+            console.warn('Could not save completed files, using localStorage fallback:', error);
+            localStorage.setItem('completedAudioFiles', JSON.stringify(this.completedFiles));
         }
     }
 
     async saveFileComments() {
         try {
-            await this.githubApi.updateFile('file_comments.json', this.fileComments, 'Update file comments');
+            const success = await this.githubApi.updateFile('file_comments.json', this.fileComments, 'Update file comments');
+            if (!success) {
+                localStorage.setItem('audioFileComments', JSON.stringify(this.fileComments));
+            }
         } catch (error) {
-            console.warn('Could not save file comments:', error);
+            console.warn('Could not save file comments, using localStorage fallback:', error);
+            localStorage.setItem('audioFileComments', JSON.stringify(this.fileComments));
         }
     }
 
     async saveNotCompletedFiles() {
         try {
-            await this.githubApi.updateFile('not_completed_files.json', this.notCompletedFiles, 'Update not completed files');
+            const success = await this.githubApi.updateFile('not_completed_files.json', this.notCompletedFiles, 'Update not completed files');
+            if (!success) {
+                localStorage.setItem('notCompletedAudioFiles', JSON.stringify(this.notCompletedFiles));
+            }
         } catch (error) {
-            console.warn('Could not save not completed files:', error);
+            console.warn('Could not save not completed files, using localStorage fallback:', error);
+            localStorage.setItem('notCompletedAudioFiles', JSON.stringify(this.notCompletedFiles));
         }
     }
 
@@ -1362,9 +1375,15 @@ class ChapterViewer {
 
     async saveDeletedFiles() {
         try {
-            await this.githubApi.updateFile('deleted_files_history.json', this.deletedFiles, 'Update deleted files');
+            const success = await this.githubApi.updateFile('deleted_files_history.json', this.deletedFiles, 'Update deleted files');
+            if (!success) {
+                // Fallback to localStorage
+                console.warn('GitHub API failed, using localStorage fallback');
+                localStorage.setItem('deletedAudioFiles', JSON.stringify(this.deletedFiles));
+            }
         } catch (error) {
-            console.warn('Could not save deleted files:', error);
+            console.warn('Could not save deleted files, using localStorage fallback:', error);
+            localStorage.setItem('deletedAudioFiles', JSON.stringify(this.deletedFiles));
         }
     }
 
@@ -1733,27 +1752,37 @@ class ChapterViewer {
     }
 
     async loadSharedData() {
-        console.log('Loading shared data from GitHub...');
+        console.log('Loading shared data from GitHub with localStorage fallback...');
         try {
             const [deleted, completed, comments, notCompleted] = await Promise.all([
-                this.githubApi.getFileContent('deleted_files_history.json').catch(() => ({})),
-                this.githubApi.getFileContent('completed_files.json').catch(() => ({})),
-                this.githubApi.getFileContent('file_comments.json').catch(() => ({})),
-                this.githubApi.getFileContent('not_completed_files.json').catch(() => ({}))
+                this.githubApi.getFileContent('deleted_files_history.json').catch(() => this.loadFromLocalStorage('deletedAudioFiles', {})),
+                this.githubApi.getFileContent('completed_files.json').catch(() => this.loadFromLocalStorage('completedAudioFiles', {})),
+                this.githubApi.getFileContent('file_comments.json').catch(() => this.loadFromLocalStorage('audioFileComments', {})),
+                this.githubApi.getFileContent('not_completed_files.json').catch(() => this.loadFromLocalStorage('notCompletedAudioFiles', {}))
             ]);
 
-            this.deletedFiles = deleted || {};
-            this.completedFiles = completed || {};
-            this.fileComments = comments || {};
-            this.notCompletedFiles = notCompleted || {};
+            this.deletedFiles = deleted || this.loadFromLocalStorage('deletedAudioFiles', {});
+            this.completedFiles = completed || this.loadFromLocalStorage('completedAudioFiles', {});
+            this.fileComments = comments || this.loadFromLocalStorage('audioFileComments', {});
+            this.notCompletedFiles = notCompleted || this.loadFromLocalStorage('notCompletedAudioFiles', {});
 
             console.log('Shared data loaded successfully');
         } catch (error) {
-            console.warn('Error loading shared data, using empty defaults:', error);
-            this.deletedFiles = {};
-            this.completedFiles = {};
-            this.fileComments = {};
-            this.notCompletedFiles = {};
+            console.warn('Error loading shared data, trying localStorage fallback:', error);
+            this.deletedFiles = this.loadFromLocalStorage('deletedAudioFiles', {});
+            this.completedFiles = this.loadFromLocalStorage('completedAudioFiles', {});
+            this.fileComments = this.loadFromLocalStorage('audioFileComments', {});
+            this.notCompletedFiles = this.loadFromLocalStorage('notCompletedAudioFiles', {});
+        }
+    }
+
+    loadFromLocalStorage(key, defaultValue) {
+        try {
+            const data = localStorage.getItem(key);
+            return data ? JSON.parse(data) : defaultValue;
+        } catch (error) {
+            console.warn(`Could not load ${key} from localStorage:`, error);
+            return defaultValue;
         }
     }
 
