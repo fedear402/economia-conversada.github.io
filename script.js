@@ -27,12 +27,16 @@ class GitHubAPI {
 
     async updateFile(path, content, message) {
         try {
-            // Get current file to get its SHA
+            // Get current file to get its SHA (if it exists)
             const currentResponse = await fetch(`${this.baseUrl}/repos/${this.owner}/${this.repo}/contents/${path}?ref=${this.branch}`);
             let sha = null;
             if (currentResponse.ok) {
                 const currentData = await currentResponse.json();
                 sha = currentData.sha;
+            } else if (currentResponse.status !== 404) {
+                // If it's not a 404 (file not found), something else went wrong
+                console.error(`Error checking file ${path}:`, currentResponse.status);
+                return false;
             }
 
             const updateData = {
@@ -41,8 +45,12 @@ class GitHubAPI {
                 branch: this.branch
             };
 
+            // Only add SHA if file exists (for updates)
             if (sha) {
                 updateData.sha = sha;
+                console.log(`Updating existing file: ${path}`);
+            } else {
+                console.log(`Creating new file: ${path}`);
             }
 
             const response = await fetch(`${this.baseUrl}/repos/${this.owner}/${this.repo}/contents/${path}`, {
@@ -53,7 +61,14 @@ class GitHubAPI {
                 body: JSON.stringify(updateData)
             });
 
-            return response.ok;
+            if (!response.ok) {
+                const errorData = await response.text();
+                console.error(`Failed to ${sha ? 'update' : 'create'} ${path}:`, response.status, errorData);
+                return false;
+            }
+
+            console.log(`Successfully ${sha ? 'updated' : 'created'} ${path}`);
+            return true;
         } catch (error) {
             console.error(`Failed to update ${path}:`, error);
             return false;
