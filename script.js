@@ -7,6 +7,7 @@ class ChapterViewer {
         this.characterData = {}; // Cache for character data
         this.deletedFiles = this.loadDeletedFiles(); // Track deleted files in localStorage
         this.completedFiles = this.loadCompletedFiles(); // Track completed files in localStorage
+        this.fileComments = this.loadFileComments(); // Track file comments in localStorage
         this.init();
     }
 
@@ -485,51 +486,61 @@ class ChapterViewer {
                 
                 // Handle NOT OK click
                 notOkLabel.onclick = () => {
-                    this.markFileAsCompleted(audioFile.path, audioFile.name, false);
-                    if (!this.markFileAsNotCompleted) {
-                        // Initialize not completed functionality if it doesn't exist
-                        this.notCompletedFiles = this.notCompletedFiles || {};
-                        this.markFileAsNotCompleted = (filePath, fileName, isNotCompleted) => {
-                            if (isNotCompleted) {
-                                this.notCompletedFiles[filePath] = {
-                                    not_completed_at: new Date().toISOString(),
-                                    name: fileName
-                                };
-                            } else {
-                                delete this.notCompletedFiles[filePath];
-                            }
+                    this.showCommentModal(audioFile.path, audioFile.name, (comment) => {
+                        this.markFileAsCompleted(audioFile.path, audioFile.name, false);
+                        if (!this.markFileAsNotCompleted) {
+                            // Initialize not completed functionality if it doesn't exist
+                            this.notCompletedFiles = this.notCompletedFiles || {};
+                            this.markFileAsNotCompleted = (filePath, fileName, isNotCompleted) => {
+                                if (isNotCompleted) {
+                                    this.notCompletedFiles[filePath] = {
+                                        not_completed_at: new Date().toISOString(),
+                                        name: fileName
+                                    };
+                                } else {
+                                    delete this.notCompletedFiles[filePath];
+                                }
+                                try {
+                                    localStorage.setItem('notCompletedAudioFiles', JSON.stringify(this.notCompletedFiles));
+                                } catch (error) {
+                                    console.warn('Could not save not completed files to localStorage:', error);
+                                }
+                            };
+                            this.isFileNotCompleted = (filePath) => {
+                                return this.notCompletedFiles && this.notCompletedFiles.hasOwnProperty(filePath);
+                            };
+                            // Load existing not completed files
                             try {
-                                localStorage.setItem('notCompletedAudioFiles', JSON.stringify(this.notCompletedFiles));
+                                const notCompleted = localStorage.getItem('notCompletedAudioFiles');
+                                this.notCompletedFiles = notCompleted ? JSON.parse(notCompleted) : {};
                             } catch (error) {
-                                console.warn('Could not save not completed files to localStorage:', error);
+                                this.notCompletedFiles = {};
                             }
-                        };
-                        this.isFileNotCompleted = (filePath) => {
-                            return this.notCompletedFiles && this.notCompletedFiles.hasOwnProperty(filePath);
-                        };
-                        // Load existing not completed files
-                        try {
-                            const notCompleted = localStorage.getItem('notCompletedAudioFiles');
-                            this.notCompletedFiles = notCompleted ? JSON.parse(notCompleted) : {};
-                        } catch (error) {
-                            this.notCompletedFiles = {};
                         }
-                    }
-                    this.markFileAsNotCompleted(audioFile.path, audioFile.name, true);
-                    
-                    // Update visual feedback
-                    audioLabel.style.color = '#CC0000';
-                    audioLabel.style.fontWeight = 'bold';
-                    notOkLabel.style.backgroundColor = '#CC0000';
-                    notOkLabel.style.color = 'white';
-                    notOkLabel.style.fontWeight = 'bold';
-                    okLabel.style.backgroundColor = 'transparent';
-                    okLabel.style.color = '#666';
-                    okLabel.style.fontWeight = 'normal';
-                    
-                    if (document.querySelector('.todo-content-view')) {
-                        this.updateTodoCompletionStyles();
-                    }
+                        this.markFileAsNotCompleted(audioFile.path, audioFile.name, true);
+                        
+                        // Add comment if provided
+                        if (comment && comment.trim()) {
+                            this.addFileComment(audioFile.path, audioFile.name, comment.trim());
+                        }
+                        
+                        // Update visual feedback
+                        audioLabel.style.color = '#CC0000';
+                        audioLabel.style.fontWeight = 'bold';
+                        notOkLabel.style.backgroundColor = '#CC0000';
+                        notOkLabel.style.color = 'white';
+                        notOkLabel.style.fontWeight = 'bold';
+                        okLabel.style.backgroundColor = 'transparent';
+                        okLabel.style.color = '#666';
+                        okLabel.style.fontWeight = 'normal';
+                        
+                        // Update comments display if it exists
+                        this.updateCommentsDisplay(audioFile.path, audioPlayerContainer);
+                        
+                        if (document.querySelector('.todo-content-view')) {
+                            this.updateTodoCompletionStyles();
+                        }
+                    });
                 };
                 
                 completionContainer.appendChild(okLabel);
@@ -539,6 +550,9 @@ class ChapterViewer {
                 audioLabelContainer.appendChild(audioLabel);
                 audioLabelContainer.appendChild(completionContainer);
                 audioPlayerContainer.appendChild(audioLabelContainer);
+                
+                // Add comments display if file has comments
+                this.addCommentsDisplay(audioFile.path, audioPlayerContainer);
                 
                 // Create audio player
                 const audio = document.createElement('audio');
@@ -1012,6 +1026,233 @@ class ChapterViewer {
         } catch (error) {
             console.warn('Could not save completed files to localStorage:', error);
         }
+    }
+
+    loadFileComments() {
+        try {
+            const comments = localStorage.getItem('audioFileComments');
+            return comments ? JSON.parse(comments) : {};
+        } catch (error) {
+            console.warn('Could not load file comments from localStorage:', error);
+            return {};
+        }
+    }
+
+    saveFileComments() {
+        try {
+            localStorage.setItem('audioFileComments', JSON.stringify(this.fileComments));
+        } catch (error) {
+            console.warn('Could not save file comments to localStorage:', error);
+        }
+    }
+
+    addFileComment(filePath, fileName, comment) {
+        if (!this.fileComments[filePath]) {
+            this.fileComments[filePath] = [];
+        }
+        this.fileComments[filePath].push({
+            comment: comment,
+            timestamp: new Date().toISOString(),
+            fileName: fileName
+        });
+        this.saveFileComments();
+    }
+
+    getFileComments(filePath) {
+        return this.fileComments[filePath] || [];
+    }
+
+    showCommentModal(filePath, fileName, callback) {
+        // Create modal overlay
+        const modalOverlay = document.createElement('div');
+        modalOverlay.style.position = 'fixed';
+        modalOverlay.style.top = '0';
+        modalOverlay.style.left = '0';
+        modalOverlay.style.width = '100%';
+        modalOverlay.style.height = '100%';
+        modalOverlay.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+        modalOverlay.style.zIndex = '10000';
+        modalOverlay.style.display = 'flex';
+        modalOverlay.style.alignItems = 'center';
+        modalOverlay.style.justifyContent = 'center';
+        
+        // Create modal content
+        const modal = document.createElement('div');
+        modal.style.backgroundColor = 'white';
+        modal.style.padding = '30px';
+        modal.style.borderRadius = '8px';
+        modal.style.boxShadow = '0 4px 20px rgba(0, 0, 0, 0.3)';
+        modal.style.maxWidth = '500px';
+        modal.style.width = '90%';
+        modal.style.maxHeight = '80vh';
+        modal.style.overflow = 'auto';
+        
+        // Create modal title
+        const title = document.createElement('h3');
+        title.textContent = `Comentario para: ${fileName}`;
+        title.style.marginBottom = '20px';
+        title.style.color = '#333';
+        
+        // Create textarea
+        const textarea = document.createElement('textarea');
+        textarea.placeholder = 'Escribe tu comentario sobre por qué no está OK...';
+        textarea.style.width = '100%';
+        textarea.style.height = '120px';
+        textarea.style.padding = '10px';
+        textarea.style.border = '1px solid #ddd';
+        textarea.style.borderRadius = '4px';
+        textarea.style.fontSize = '14px';
+        textarea.style.fontFamily = 'inherit';
+        textarea.style.resize = 'vertical';
+        textarea.style.marginBottom = '20px';
+        
+        // Create buttons container
+        const buttonsContainer = document.createElement('div');
+        buttonsContainer.style.display = 'flex';
+        buttonsContainer.style.gap = '10px';
+        buttonsContainer.style.justifyContent = 'flex-end';
+        
+        // Create submit button
+        const submitBtn = document.createElement('button');
+        submitBtn.textContent = 'Enviar';
+        submitBtn.style.backgroundColor = '#CC0000';
+        submitBtn.style.color = 'white';
+        submitBtn.style.border = 'none';
+        submitBtn.style.padding = '10px 20px';
+        submitBtn.style.borderRadius = '4px';
+        submitBtn.style.cursor = 'pointer';
+        submitBtn.style.fontSize = '14px';
+        
+        // Create cancel button
+        const cancelBtn = document.createElement('button');
+        cancelBtn.textContent = 'Cancelar';
+        cancelBtn.style.backgroundColor = '#666';
+        cancelBtn.style.color = 'white';
+        cancelBtn.style.border = 'none';
+        cancelBtn.style.padding = '10px 20px';
+        cancelBtn.style.borderRadius = '4px';
+        cancelBtn.style.cursor = 'pointer';
+        cancelBtn.style.fontSize = '14px';
+        
+        // Add event listeners
+        submitBtn.onclick = () => {
+            const comment = textarea.value.trim();
+            document.body.removeChild(modalOverlay);
+            callback(comment);
+        };
+        
+        cancelBtn.onclick = () => {
+            document.body.removeChild(modalOverlay);
+        };
+        
+        // Close on overlay click
+        modalOverlay.onclick = (e) => {
+            if (e.target === modalOverlay) {
+                document.body.removeChild(modalOverlay);
+            }
+        };
+        
+        // Close on escape key
+        const escapeHandler = (e) => {
+            if (e.key === 'Escape') {
+                document.body.removeChild(modalOverlay);
+                document.removeEventListener('keydown', escapeHandler);
+            }
+        };
+        document.addEventListener('keydown', escapeHandler);
+        
+        // Assemble modal
+        buttonsContainer.appendChild(cancelBtn);
+        buttonsContainer.appendChild(submitBtn);
+        modal.appendChild(title);
+        modal.appendChild(textarea);
+        modal.appendChild(buttonsContainer);
+        modalOverlay.appendChild(modal);
+        
+        // Add to DOM and focus textarea
+        document.body.appendChild(modalOverlay);
+        textarea.focus();
+    }
+
+    addCommentsDisplay(filePath, containerElement) {
+        const comments = this.getFileComments(filePath);
+        if (comments.length === 0) return;
+        
+        // Create comments toggle button
+        const commentsToggle = document.createElement('div');
+        commentsToggle.style.marginTop = '8px';
+        commentsToggle.style.cursor = 'pointer';
+        commentsToggle.style.color = '#666';
+        commentsToggle.style.fontSize = '12px';
+        commentsToggle.style.textDecoration = 'underline';
+        commentsToggle.textContent = `Comentarios (${comments.length})`;
+        
+        // Create comments container (initially hidden)
+        const commentsContainer = document.createElement('div');
+        commentsContainer.style.display = 'none';
+        commentsContainer.style.marginTop = '10px';
+        commentsContainer.style.padding = '10px';
+        commentsContainer.style.backgroundColor = '#f9f9f9';
+        commentsContainer.style.borderRadius = '4px';
+        commentsContainer.style.border = '1px solid #eee';
+        commentsContainer.className = 'comments-container';
+        
+        // Populate comments
+        this.populateCommentsContainer(commentsContainer, comments);
+        
+        // Toggle functionality
+        let isExpanded = false;
+        commentsToggle.onclick = () => {
+            isExpanded = !isExpanded;
+            commentsContainer.style.display = isExpanded ? 'block' : 'none';
+            commentsToggle.textContent = `Comentarios (${comments.length}) ${isExpanded ? '▼' : '▶'}`;
+        };
+        
+        containerElement.appendChild(commentsToggle);
+        containerElement.appendChild(commentsContainer);
+    }
+
+    populateCommentsContainer(container, comments) {
+        container.innerHTML = '';
+        
+        comments.forEach((commentData, index) => {
+            const commentDiv = document.createElement('div');
+            commentDiv.style.marginBottom = index < comments.length - 1 ? '10px' : '0';
+            commentDiv.style.paddingBottom = index < comments.length - 1 ? '10px' : '0';
+            commentDiv.style.borderBottom = index < comments.length - 1 ? '1px solid #ddd' : 'none';
+            
+            const commentText = document.createElement('div');
+            commentText.textContent = commentData.comment;
+            commentText.style.fontSize = '13px';
+            commentText.style.lineHeight = '1.4';
+            commentText.style.marginBottom = '4px';
+            
+            const commentMeta = document.createElement('div');
+            const date = new Date(commentData.timestamp);
+            commentMeta.textContent = date.toLocaleString();
+            commentMeta.style.fontSize = '11px';
+            commentMeta.style.color = '#888';
+            
+            commentDiv.appendChild(commentText);
+            commentDiv.appendChild(commentMeta);
+            container.appendChild(commentDiv);
+        });
+    }
+
+    updateCommentsDisplay(filePath, containerElement) {
+        // Remove existing comments display
+        const existingToggle = containerElement.querySelector('div:last-child');
+        const existingContainer = containerElement.querySelector('.comments-container');
+        
+        if (existingToggle && existingToggle.textContent.includes('Comentarios')) {
+            existingToggle.remove();
+        }
+        if (existingContainer) {
+            existingContainer.remove();
+        }
+        
+        // Add updated comments display
+        this.addCommentsDisplay(filePath, containerElement);
     }
 
     saveDeletedFiles() {
