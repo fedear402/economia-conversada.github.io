@@ -63,40 +63,78 @@ class GitHubAPI {
 
 class ChapterViewer {
     constructor() {
-        this.bookStructure = null;
-        this.currentChapter = null;
-        this.currentSection = null;
-        this.audioManifestData = {}; // Cache for audio manifest data
-        this.characterData = {}; // Cache for character data
-        this.githubApi = new GitHubAPI();
-        this.deletedFiles = {};
-        this.completedFiles = {};
-        this.fileComments = {};
-        this.notCompletedFiles = {};
-        this.init();
+        try {
+            this.bookStructure = null;
+            this.currentChapter = null;
+            this.currentSection = null;
+            this.audioManifestData = {}; // Cache for audio manifest data
+            this.characterData = {}; // Cache for character data
+            this.githubApi = new GitHubAPI();
+            this.deletedFiles = {};
+            this.completedFiles = {};
+            this.fileComments = {};
+            this.notCompletedFiles = {};
+            console.log('ChapterViewer constructor completed, starting init...');
+            this.init().catch(error => {
+                console.error('Init failed:', error);
+                this.showError('Initialization failed: ' + error.message);
+            });
+        } catch (error) {
+            console.error('Constructor failed:', error);
+            throw error;
+        }
     }
 
     async init() {
-        await this.loadBookStructure();
-        console.log('Book structure loaded:', this.bookStructure);
-        
-        // Load shared data with timeout - don't block the UI
-        const loadDataWithTimeout = Promise.race([
-            this.loadSharedData(),
-            new Promise(resolve => setTimeout(() => {
-                console.warn('Shared data loading timed out, continuing with empty data');
-                this.deletedFiles = {};
-                this.completedFiles = {};
-                this.fileComments = {};
-                this.notCompletedFiles = {};
-                resolve();
-            }, 5000))
-        ]);
-        
-        await loadDataWithTimeout;
-        await this.renderNavigation();
-        await this.loadAllAudioManifests();
-        await this.loadCharacterData();
+        try {
+            console.log('Starting init process...');
+            
+            await this.loadBookStructure();
+            console.log('Book structure loaded:', this.bookStructure);
+            
+            // Load shared data with timeout - don't block the UI
+            const loadDataWithTimeout = Promise.race([
+                this.loadSharedData(),
+                new Promise(resolve => setTimeout(() => {
+                    console.warn('Shared data loading timed out, continuing with empty data');
+                    this.deletedFiles = {};
+                    this.completedFiles = {};
+                    this.fileComments = {};
+                    this.notCompletedFiles = {};
+                    resolve();
+                }, 3000))
+            ]);
+            
+            await loadDataWithTimeout;
+            console.log('Shared data loaded');
+            
+            await this.renderNavigation();
+            console.log('Navigation rendered');
+            
+            await this.loadAllAudioManifests();
+            console.log('Audio manifests loaded');
+            
+            await this.loadCharacterData();
+            console.log('Character data loaded');
+            
+            console.log('Initialization complete!');
+        } catch (error) {
+            console.error('Init process failed:', error);
+            this.showError('Failed to load application: ' + error.message);
+        }
+    }
+
+    showError(message) {
+        const content = document.getElementById('chapter-content');
+        if (content) {
+            content.innerHTML = `
+                <div class="error" style="padding: 20px; background: #fee; border: 1px solid #fcc; border-radius: 4px; margin: 20px;">
+                    <h2 style="color: #c00;">Error</h2>
+                    <p>${message}</p>
+                    <button onclick="location.reload()" style="padding: 8px 16px; background: #007cba; color: white; border: none; border-radius: 4px; cursor: pointer;">Reload Page</button>
+                </div>
+            `;
+        }
     }
 
     async loadBookStructure() {
@@ -1729,6 +1767,22 @@ class ChapterViewer {
 }
 
 // Initialize the chapter viewer when the page loads
-document.addEventListener('DOMContentLoaded', () => {
-    window.chapterViewer = new ChapterViewer();
+document.addEventListener('DOMContentLoaded', async () => {
+    try {
+        console.log('Initializing ChapterViewer...');
+        window.chapterViewer = new ChapterViewer();
+    } catch (error) {
+        console.error('Failed to initialize ChapterViewer:', error);
+        // Fallback: show error message to user
+        const content = document.getElementById('chapter-content');
+        if (content) {
+            content.innerHTML = `
+                <div class="error">
+                    <h2>Error loading application</h2>
+                    <p>There was an error initializing the application. Please refresh the page.</p>
+                    <p>Error: ${error.message}</p>
+                </div>
+            `;
+        }
+    }
 });
