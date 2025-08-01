@@ -503,24 +503,39 @@ class ChapterViewer {
         
         let headerVisible = true;
         toggleBtn.onclick = () => {
-            const content = document.querySelector('.content');
             if (headerVisible) {
-                // Hide header but keep small part visible for unhide button
-                header.style.transform = 'translateY(-75%)';
+                // Hide everything except title and button - create floating minimal header
+                const breadcrumb = header.querySelector('.breadcrumb');
+                const description = header.querySelector('.section-description');
+                const audioSection = header.querySelector('.audio-section');
+                
+                if (breadcrumb) breadcrumb.style.display = 'none';
+                if (description) description.style.display = 'none';
+                if (audioSection) audioSection.style.display = 'none';
+                
+                // Make header compact
+                header.style.padding = '10px 20px';
                 toggleBtn.innerHTML = 'SHOW';
                 toggleBtn.title = 'Show Header';
-                // Adjust content to move up appropriately
-                const headerHeight = header.offsetHeight;
-                const hiddenPadding = Math.max(30, headerHeight * 0.25 + 20); // 25% of header + buffer
-                content.style.paddingTop = `${hiddenPadding}px`;
             } else {
-                header.style.transform = 'translateY(0)';
+                // Show all elements again
+                const breadcrumb = header.querySelector('.breadcrumb');
+                const description = header.querySelector('.section-description');
+                const audioSection = header.querySelector('.audio-section');
+                
+                if (breadcrumb) breadcrumb.style.display = 'block';
+                if (description) description.style.display = 'block';
+                if (audioSection) audioSection.style.display = 'block';
+                
+                // Restore original padding
+                header.style.padding = '20px';
                 toggleBtn.innerHTML = 'HIDE';
                 toggleBtn.title = 'Hide Header';
-                // Restore original dynamic padding
-                this.adjustContentPadding();
             }
             headerVisible = !headerVisible;
+            
+            // Recalculate padding to maintain same spacing
+            setTimeout(() => this.adjustContentPadding(), 50);
         };
         
         header.appendChild(toggleBtn);
