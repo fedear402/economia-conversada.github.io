@@ -1756,13 +1756,25 @@ class ChapterViewer {
     }
 
     async loadSharedData() {
-        console.log('Loading shared data from GitHub...');
+        console.log('Loading shared data from GitHub Issues...');
         try {
             const [deleted, completed, comments, notCompleted] = await Promise.all([
-                this.githubApi.getFileContent('deleted_files_history.json').catch(() => ({})),
-                this.githubApi.getFileContent('completed_files.json').catch(() => ({})),
-                this.githubApi.getFileContent('file_comments.json').catch(() => ({})),
-                this.githubApi.getFileContent('not_completed_files.json').catch(() => ({}))
+                this.githubApi.getFileContent('deleted_files_history.json').catch(e => {
+                    console.warn('Failed to load deleted files:', e);
+                    return {};
+                }),
+                this.githubApi.getFileContent('completed_files.json').catch(e => {
+                    console.warn('Failed to load completed files:', e);
+                    return {};
+                }),
+                this.githubApi.getFileContent('file_comments.json').catch(e => {
+                    console.warn('Failed to load file comments:', e);
+                    return {};
+                }),
+                this.githubApi.getFileContent('not_completed_files.json').catch(e => {
+                    console.warn('Failed to load not completed files:', e);
+                    return {};
+                })
             ]);
 
             this.deletedFiles = deleted || {};
@@ -1770,7 +1782,12 @@ class ChapterViewer {
             this.fileComments = comments || {};
             this.notCompletedFiles = notCompleted || {};
 
-            console.log('Shared data loaded successfully from GitHub');
+            console.log('Shared data loaded from GitHub Issues:', {
+                deletedCount: Object.keys(this.deletedFiles).length,
+                completedCount: Object.keys(this.completedFiles).length,
+                commentsCount: Object.keys(this.fileComments).length,
+                notCompletedCount: Object.keys(this.notCompletedFiles).length
+            });
         } catch (error) {
             console.warn('Error loading shared data from GitHub:', error);
             this.deletedFiles = {};
