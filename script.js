@@ -434,10 +434,9 @@ class ChapterViewer {
                 completionLabel.style.fontWeight = isCompleted ? 'bold' : 'normal';
                 completionLabel.style.cursor = 'pointer';
                 
-                // Handle both checkbox and label clicks
-                const toggleCompletion = () => {
-                    const isNowCompleted = !completionCheckbox.checked;
-                    completionCheckbox.checked = isNowCompleted;
+                // Handle checkbox clicks properly
+                completionCheckbox.onchange = (e) => {
+                    const isNowCompleted = e.target.checked;
                     this.markFileAsCompleted(audioFile.path, audioFile.name, isNowCompleted);
                     
                     // Update visual feedback
@@ -461,16 +460,20 @@ class ChapterViewer {
                     }
                 };
                 
-                completionCheckbox.onchange = toggleCompletion;
-                completionLabel.onclick = toggleCompletion;
+                // Handle label clicks to toggle checkbox
+                completionLabel.onclick = () => {
+                    completionCheckbox.checked = !completionCheckbox.checked;
+                    completionCheckbox.onchange({ target: completionCheckbox });
+                };
                 
                 completionContainer.appendChild(completionCheckbox);
                 completionContainer.appendChild(completionLabel);
                 
-                audioLabelContainer.appendChild(audioLabel);
                 controlsContainer.appendChild(deleteBtn);
                 controlsContainer.appendChild(completionContainer);
+                
                 audioLabelContainer.appendChild(controlsContainer);
+                audioLabelContainer.appendChild(audioLabel);
                 audioPlayerContainer.appendChild(audioLabelContainer);
                 
                 // Create audio player
