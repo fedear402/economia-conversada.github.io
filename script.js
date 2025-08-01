@@ -482,40 +482,56 @@ class ChapterViewer {
         const header = document.createElement('div');
         header.className = `${type}-header`;
         
-        // Add simple toggle button
+        // Add simple toggle button - positioned outside header so it stays visible
         const toggleBtn = document.createElement('button');
         toggleBtn.innerHTML = '−';
         toggleBtn.title = 'Hide Header';
         toggleBtn.style.cssText = `
-            position: absolute;
+            position: fixed;
             top: 10px;
             right: 10px;
-            width: 20px;
-            height: 20px;
+            width: 24px;
+            height: 24px;
             border: 1px solid #ccc;
             background: #fff;
-            border-radius: 2px;
+            border-radius: 3px;
             cursor: pointer;
-            font-size: 12px;
+            font-size: 14px;
             line-height: 1;
-            z-index: 101;
+            z-index: 102;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         `;
         
         let headerVisible = true;
         toggleBtn.onclick = () => {
+            const content = document.querySelector('.content');
             if (headerVisible) {
-                header.style.transform = 'translateY(-90%)';
+                header.style.transform = 'translateY(-85%)';
                 toggleBtn.innerHTML = '+';
                 toggleBtn.title = 'Show Header';
+                // Reduce content padding when hidden
+                content.style.paddingTop = '60px';
             } else {
                 header.style.transform = 'translateY(0)';
                 toggleBtn.innerHTML = '−';
                 toggleBtn.title = 'Hide Header';
+                // Restore original padding when shown
+                this.adjustContentPadding();
             }
             headerVisible = !headerVisible;
         };
         
-        header.appendChild(toggleBtn);
+        // Remove any existing toggle buttons first
+        const existingToggle = document.querySelector('.header-toggle-btn');
+        if (existingToggle) {
+            existingToggle.remove();
+        }
+        
+        // Add class for easy cleanup
+        toggleBtn.classList.add('header-toggle-btn');
+        
+        // Add button to document body so it stays visible
+        document.body.appendChild(toggleBtn);
         
         // Add breadcrumb for sections
         if (type === 'section' && parentChapter) {
@@ -851,6 +867,12 @@ class ChapterViewer {
     async renderTodoContent() {
         const content = document.getElementById('chapter-content');
         const contentContainer = content.parentElement; // .content element
+        
+        // Remove header toggle button if it exists
+        const existingToggle = document.querySelector('.header-toggle-btn');
+        if (existingToggle) {
+            existingToggle.remove();
+        }
         
         // Add class to make content wider
         contentContainer.classList.add('todo-view');
@@ -1568,6 +1590,12 @@ class ChapterViewer {
     renderDeletedFilesContent() {
         const content = document.getElementById('chapter-content');
         const contentContainer = content.parentElement;
+        
+        // Remove header toggle button if it exists
+        const existingToggle = document.querySelector('.header-toggle-btn');
+        if (existingToggle) {
+            existingToggle.remove();
+        }
         
         contentContainer.classList.add('todo-view');
         
