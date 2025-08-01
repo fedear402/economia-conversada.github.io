@@ -361,31 +361,14 @@ class ChapterViewer {
                 const audioPlayerContainer = document.createElement('div');
                 audioPlayerContainer.className = 'audio-player-container';
                 
-                // Add audio file label with completion checkbox and delete button
+                // Add audio file label with delete and completion controls
                 const audioLabelContainer = document.createElement('div');
                 audioLabelContainer.style.display = 'flex';
-                audioLabelContainer.style.justifyContent = 'space-between';
                 audioLabelContainer.style.alignItems = 'center';
                 audioLabelContainer.style.marginBottom = '8px';
+                audioLabelContainer.style.gap = '12px';
                 
-                const audioLabel = document.createElement('div');
-                audioLabel.className = 'audio-label';
-                audioLabel.textContent = audioFile.displayName;
-                audioLabel.style.flex = '1';
-                
-                // Check if file is completed
-                const isCompleted = this.isFileCompleted(audioFile.path);
-                if (isCompleted) {
-                    audioLabel.style.color = '#27ae60';
-                    audioLabel.style.fontWeight = 'bold';
-                }
-                
-                const controlsContainer = document.createElement('div');
-                controlsContainer.style.display = 'flex';
-                controlsContainer.style.alignItems = 'center';
-                controlsContainer.style.gap = '12px';
-                
-                // Add delete button (on the left, prettier)
+                // Add delete button (far left)
                 const deleteBtn = document.createElement('button');
                 deleteBtn.className = 'audio-delete-btn';
                 deleteBtn.innerHTML = '×';
@@ -402,6 +385,7 @@ class ChapterViewer {
                 deleteBtn.style.alignItems = 'center';
                 deleteBtn.style.justifyContent = 'center';
                 deleteBtn.style.transition = 'all 0.2s ease';
+                deleteBtn.style.flexShrink = '0';
                 deleteBtn.onmouseover = () => {
                     deleteBtn.style.backgroundColor = '#c0392b';
                     deleteBtn.style.transform = 'scale(1.1)';
@@ -415,65 +399,145 @@ class ChapterViewer {
                     this.confirmDeleteAudioFromSection(audioFile, audioPlayerContainer, type, parentChapter);
                 };
                 
-                // Add completion checkbox with label (on the right)
+                // Add audio label (center, takes remaining space)
+                const audioLabel = document.createElement('div');
+                audioLabel.className = 'audio-label';
+                audioLabel.textContent = audioFile.displayName;
+                audioLabel.style.flex = '1';
+                
+                // Check if file is completed and set appropriate colors
+                const isCompleted = this.isFileCompleted(audioFile.path);
+                const isNotCompleted = this.isFileNotCompleted && this.isFileNotCompleted(audioFile.path);
+                
+                if (isCompleted) {
+                    audioLabel.style.color = '#27ae60';
+                    audioLabel.style.fontWeight = 'bold';
+                } else if (isNotCompleted) {
+                    audioLabel.style.color = '#e74c3c';
+                    audioLabel.style.fontWeight = 'bold';
+                }
+                
+                // Add completion controls (far right)
                 const completionContainer = document.createElement('div');
                 completionContainer.style.display = 'flex';
-                completionContainer.style.alignItems = 'center';
-                completionContainer.style.gap = '6px';
+                completionContainer.style.flexDirection = 'column';
+                completionContainer.style.alignItems = 'flex-end';
+                completionContainer.style.gap = '2px';
+                completionContainer.style.flexShrink = '0';
                 
-                const completionCheckbox = document.createElement('input');
-                completionCheckbox.type = 'checkbox';
-                completionCheckbox.checked = isCompleted;
-                completionCheckbox.style.transform = 'scale(1.2)';
-                completionCheckbox.style.cursor = 'pointer';
+                const okLabel = document.createElement('span');
+                okLabel.textContent = 'OK';
+                okLabel.style.fontSize = '12px';
+                okLabel.style.cursor = 'pointer';
+                okLabel.style.padding = '2px 4px';
+                okLabel.style.borderRadius = '3px';
+                okLabel.style.transition = 'all 0.2s ease';
                 
-                const completionLabel = document.createElement('span');
-                completionLabel.textContent = isCompleted ? 'OK' : 'OK?';
-                completionLabel.style.fontSize = '14px';
-                completionLabel.style.color = isCompleted ? '#27ae60' : '#666';
-                completionLabel.style.fontWeight = isCompleted ? 'bold' : 'normal';
-                completionLabel.style.cursor = 'pointer';
+                const notOkLabel = document.createElement('span');
+                notOkLabel.textContent = 'NOT OK';
+                notOkLabel.style.fontSize = '12px';
+                notOkLabel.style.cursor = 'pointer';
+                notOkLabel.style.padding = '2px 4px';
+                notOkLabel.style.borderRadius = '3px';
+                notOkLabel.style.transition = 'all 0.2s ease';
                 
-                // Handle checkbox clicks properly
-                completionCheckbox.onchange = (e) => {
-                    const isNowCompleted = e.target.checked;
-                    this.markFileAsCompleted(audioFile.path, audioFile.name, isNowCompleted);
-                    
-                    // Update visual feedback
-                    if (isNowCompleted) {
-                        audioLabel.style.color = '#27ae60';
-                        audioLabel.style.fontWeight = 'bold';
-                        completionLabel.textContent = 'OK';
-                        completionLabel.style.color = '#27ae60';
-                        completionLabel.style.fontWeight = 'bold';
-                    } else {
-                        audioLabel.style.color = '';
-                        audioLabel.style.fontWeight = '';
-                        completionLabel.textContent = 'OK?';
-                        completionLabel.style.color = '#666';
-                        completionLabel.style.fontWeight = 'normal';
+                // Set initial styles based on current state
+                if (isCompleted) {
+                    okLabel.style.backgroundColor = '#27ae60';
+                    okLabel.style.color = 'white';
+                    okLabel.style.fontWeight = 'bold';
+                    notOkLabel.style.color = '#666';
+                    notOkLabel.style.backgroundColor = 'transparent';
+                } else if (isNotCompleted) {
+                    notOkLabel.style.backgroundColor = '#e74c3c';
+                    notOkLabel.style.color = 'white';
+                    notOkLabel.style.fontWeight = 'bold';
+                    okLabel.style.color = '#666';
+                    okLabel.style.backgroundColor = 'transparent';
+                } else {
+                    okLabel.style.color = '#666';
+                    okLabel.style.backgroundColor = 'transparent';
+                    notOkLabel.style.color = '#666';
+                    notOkLabel.style.backgroundColor = 'transparent';
+                }
+                
+                // Handle OK click
+                okLabel.onclick = () => {
+                    this.markFileAsCompleted(audioFile.path, audioFile.name, true);
+                    if (this.markFileAsNotCompleted) {
+                        this.markFileAsNotCompleted(audioFile.path, audioFile.name, false);
                     }
                     
-                    // Update To-Do view if currently visible
+                    // Update visual feedback
+                    audioLabel.style.color = '#27ae60';
+                    audioLabel.style.fontWeight = 'bold';
+                    okLabel.style.backgroundColor = '#27ae60';
+                    okLabel.style.color = 'white';
+                    okLabel.style.fontWeight = 'bold';
+                    notOkLabel.style.backgroundColor = 'transparent';
+                    notOkLabel.style.color = '#666';
+                    notOkLabel.style.fontWeight = 'normal';
+                    
                     if (document.querySelector('.todo-content-view')) {
                         this.updateTodoCompletionStyles();
                     }
                 };
                 
-                // Handle label clicks to toggle checkbox
-                completionLabel.onclick = () => {
-                    completionCheckbox.checked = !completionCheckbox.checked;
-                    completionCheckbox.onchange({ target: completionCheckbox });
+                // Handle NOT OK click
+                notOkLabel.onclick = () => {
+                    this.markFileAsCompleted(audioFile.path, audioFile.name, false);
+                    if (!this.markFileAsNotCompleted) {
+                        // Initialize not completed functionality if it doesn't exist
+                        this.notCompletedFiles = this.notCompletedFiles || {};
+                        this.markFileAsNotCompleted = (filePath, fileName, isNotCompleted) => {
+                            if (isNotCompleted) {
+                                this.notCompletedFiles[filePath] = {
+                                    not_completed_at: new Date().toISOString(),
+                                    name: fileName
+                                };
+                            } else {
+                                delete this.notCompletedFiles[filePath];
+                            }
+                            try {
+                                localStorage.setItem('notCompletedAudioFiles', JSON.stringify(this.notCompletedFiles));
+                            } catch (error) {
+                                console.warn('Could not save not completed files to localStorage:', error);
+                            }
+                        };
+                        this.isFileNotCompleted = (filePath) => {
+                            return this.notCompletedFiles && this.notCompletedFiles.hasOwnProperty(filePath);
+                        };
+                        // Load existing not completed files
+                        try {
+                            const notCompleted = localStorage.getItem('notCompletedAudioFiles');
+                            this.notCompletedFiles = notCompleted ? JSON.parse(notCompleted) : {};
+                        } catch (error) {
+                            this.notCompletedFiles = {};
+                        }
+                    }
+                    this.markFileAsNotCompleted(audioFile.path, audioFile.name, true);
+                    
+                    // Update visual feedback
+                    audioLabel.style.color = '#e74c3c';
+                    audioLabel.style.fontWeight = 'bold';
+                    notOkLabel.style.backgroundColor = '#e74c3c';
+                    notOkLabel.style.color = 'white';
+                    notOkLabel.style.fontWeight = 'bold';
+                    okLabel.style.backgroundColor = 'transparent';
+                    okLabel.style.color = '#666';
+                    okLabel.style.fontWeight = 'normal';
+                    
+                    if (document.querySelector('.todo-content-view')) {
+                        this.updateTodoCompletionStyles();
+                    }
                 };
                 
-                completionContainer.appendChild(completionCheckbox);
-                completionContainer.appendChild(completionLabel);
+                completionContainer.appendChild(okLabel);
+                completionContainer.appendChild(notOkLabel);
                 
-                controlsContainer.appendChild(deleteBtn);
-                controlsContainer.appendChild(completionContainer);
-                
-                audioLabelContainer.appendChild(controlsContainer);
+                audioLabelContainer.appendChild(deleteBtn);
                 audioLabelContainer.appendChild(audioLabel);
+                audioLabelContainer.appendChild(completionContainer);
                 audioPlayerContainer.appendChild(audioLabelContainer);
                 
                 // Create audio player
@@ -731,10 +795,16 @@ class ChapterViewer {
                             fileNameSpan.textContent = fileName;
                             fileNameSpan.title = `Haz clic para ir a ${section.title} - ${fileName}`;
                             
-                            // Check if file is completed and apply green styling
+                            // Check if file is completed/not completed and apply styling
                             const filePath = `book1/${chapter.id}/${section.id}/${fileName}`;
-                            if (this.isFileCompleted(filePath)) {
+                            const isCompleted = this.isFileCompleted(filePath);
+                            const isNotCompleted = this.isFileNotCompleted && this.isFileNotCompleted(filePath);
+                            
+                            if (isCompleted) {
                                 fileNameSpan.style.color = '#27ae60';
+                                fileNameSpan.style.fontWeight = 'bold';
+                            } else if (isNotCompleted) {
+                                fileNameSpan.style.color = '#e74c3c';
                                 fileNameSpan.style.fontWeight = 'bold';
                             }
                             
@@ -842,8 +912,14 @@ class ChapterViewer {
             const chapter = this.bookStructure.chapters.find(ch => ch.title === chapterTitle);
             if (chapter) {
                 const filePath = `book1/${chapter.id}/${sectionNumber}/${fileName}`;
-                if (this.isFileCompleted(filePath)) {
+                const isCompleted = this.isFileCompleted(filePath);
+                const isNotCompleted = this.isFileNotCompleted && this.isFileNotCompleted(filePath);
+                
+                if (isCompleted) {
                     fileNameSpan.style.color = '#27ae60';
+                    fileNameSpan.style.fontWeight = 'bold';
+                } else if (isNotCompleted) {
+                    fileNameSpan.style.color = '#e74c3c';
                     fileNameSpan.style.fontWeight = 'bold';
                 } else {
                     fileNameSpan.style.color = '';
