@@ -28,7 +28,9 @@ class GitHubAPI {
 
     async updateFile(path, content, message) {
         try {
-            console.log(`Updating file via proxy: ${path}`);
+            // Convert file path to data type for Issues API
+            const type = path.replace('.json', '').replace(/_/g, '-');
+            console.log(`Saving data via Issues API: ${type}`);
             
             const response = await fetch('/api/github-proxy', {
                 method: 'POST',
@@ -36,24 +38,51 @@ class GitHubAPI {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    path: path,
-                    content: content,
-                    message: message || `Update ${path}`
+                    action: 'save',
+                    type: type,
+                    data: content
                 })
             });
 
             if (response.ok) {
                 const result = await response.json();
-                console.log(`Successfully updated ${path}:`, result);
+                console.log(`Successfully saved ${type}:`, result);
                 return true;
             } else {
                 const error = await response.json();
-                console.error(`Failed to update ${path}:`, response.status, error);
+                console.error(`Failed to save ${type}:`, response.status, error);
                 return false;
             }
         } catch (error) {
-            console.error(`Failed to update ${path}:`, error);
+            console.error(`Failed to save ${type}:`, error);
             return false;
+        }
+    }
+
+    async getFileContent(path) {
+        try {
+            // Convert file path to data type for Issues API  
+            const type = path.replace('.json', '').replace(/_/g, '-');
+            
+            const response = await fetch('/api/github-proxy', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    action: 'load',
+                    type: type
+                })
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                return result.data || {};
+            }
+            return {};
+        } catch (error) {
+            console.warn(`Could not load ${path}:`, error);
+            return {};
         }
     }
 }
