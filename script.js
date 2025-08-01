@@ -171,7 +171,7 @@ class ChapterViewer {
         try {
             // Try to load the static book structure first
             console.log('Attempting to load book-structure.json...');
-            const response = await fetch('book-structure.json');
+            const response = await fetch(`book-structure.json?v=${Date.now()}`);
             console.log('book-structure.json response status:', response.status);
             
             if (response.ok) {
