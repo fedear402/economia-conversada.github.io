@@ -28,48 +28,29 @@ class GitHubAPI {
 
     async updateFile(path, content, message) {
         try {
-            // Get current file to get its SHA (if it exists)
-            const currentResponse = await fetch(`${this.baseUrl}/repos/${this.owner}/${this.repo}/contents/${path}?ref=${this.branch}`);
-            let sha = null;
-            if (currentResponse.ok) {
-                const currentData = await currentResponse.json();
-                sha = currentData.sha;
-            } else if (currentResponse.status !== 404) {
-                // If it's not a 404 (file not found), something else went wrong
-                console.error(`Error checking file ${path}:`, currentResponse.status);
-                return false;
-            }
-
-            const updateData = {
-                message: message,
-                content: btoa(JSON.stringify(content, null, 2)),
-                branch: this.branch
-            };
-
-            // Only add SHA if file exists (for updates)
-            if (sha) {
-                updateData.sha = sha;
-                console.log(`Updating existing file: ${path}`);
-            } else {
-                console.log(`Creating new file: ${path}`);
-            }
-
-            const response = await fetch(`${this.baseUrl}/repos/${this.owner}/${this.repo}/contents/${path}`, {
-                method: 'PUT',
+            console.log(`Updating file via proxy: ${path}`);
+            
+            const response = await fetch('/api/github-proxy', {
+                method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify(updateData)
+                body: JSON.stringify({
+                    path: path,
+                    content: content,
+                    message: message || `Update ${path}`
+                })
             });
 
-            if (!response.ok) {
-                const errorData = await response.text();
-                console.error(`Failed to ${sha ? 'update' : 'create'} ${path}:`, response.status, errorData);
+            if (response.ok) {
+                const result = await response.json();
+                console.log(`Successfully updated ${path}:`, result);
+                return true;
+            } else {
+                const error = await response.json();
+                console.error(`Failed to update ${path}:`, response.status, error);
                 return false;
             }
-
-            console.log(`Successfully ${sha ? 'updated' : 'created'} ${path}`);
-            return true;
         } catch (error) {
             console.error(`Failed to update ${path}:`, error);
             return false;
@@ -1132,11 +1113,10 @@ class ChapterViewer {
         try {
             const success = await this.githubApi.updateFile('completed_files.json', this.completedFiles, 'Update completed files');
             if (!success) {
-                localStorage.setItem('completedAudioFiles', JSON.stringify(this.completedFiles));
+                console.error('Failed to save completed files to GitHub - data not shared!');
             }
         } catch (error) {
-            console.warn('Could not save completed files, using localStorage fallback:', error);
-            localStorage.setItem('completedAudioFiles', JSON.stringify(this.completedFiles));
+            console.error('Could not save completed files to GitHub:', error);
         }
     }
 
@@ -1144,11 +1124,10 @@ class ChapterViewer {
         try {
             const success = await this.githubApi.updateFile('file_comments.json', this.fileComments, 'Update file comments');
             if (!success) {
-                localStorage.setItem('audioFileComments', JSON.stringify(this.fileComments));
+                console.error('Failed to save file comments to GitHub - data not shared!');
             }
         } catch (error) {
-            console.warn('Could not save file comments, using localStorage fallback:', error);
-            localStorage.setItem('audioFileComments', JSON.stringify(this.fileComments));
+            console.error('Could not save file comments to GitHub:', error);
         }
     }
 
@@ -1156,11 +1135,10 @@ class ChapterViewer {
         try {
             const success = await this.githubApi.updateFile('not_completed_files.json', this.notCompletedFiles, 'Update not completed files');
             if (!success) {
-                localStorage.setItem('notCompletedAudioFiles', JSON.stringify(this.notCompletedFiles));
+                console.error('Failed to save not completed files to GitHub - data not shared!');
             }
         } catch (error) {
-            console.warn('Could not save not completed files, using localStorage fallback:', error);
-            localStorage.setItem('notCompletedAudioFiles', JSON.stringify(this.notCompletedFiles));
+            console.error('Could not save not completed files to GitHub:', error);
         }
     }
 
@@ -1377,13 +1355,10 @@ class ChapterViewer {
         try {
             const success = await this.githubApi.updateFile('deleted_files_history.json', this.deletedFiles, 'Update deleted files');
             if (!success) {
-                // Fallback to localStorage
-                console.warn('GitHub API failed, using localStorage fallback');
-                localStorage.setItem('deletedAudioFiles', JSON.stringify(this.deletedFiles));
+                console.error('Failed to save deleted files to GitHub - data not shared!');
             }
         } catch (error) {
-            console.warn('Could not save deleted files, using localStorage fallback:', error);
-            localStorage.setItem('deletedAudioFiles', JSON.stringify(this.deletedFiles));
+            console.error('Could not save deleted files to GitHub:', error);
         }
     }
 
@@ -1752,37 +1727,27 @@ class ChapterViewer {
     }
 
     async loadSharedData() {
-        console.log('Loading shared data from GitHub with localStorage fallback...');
+        console.log('Loading shared data from GitHub...');
         try {
             const [deleted, completed, comments, notCompleted] = await Promise.all([
-                this.githubApi.getFileContent('deleted_files_history.json').catch(() => this.loadFromLocalStorage('deletedAudioFiles', {})),
-                this.githubApi.getFileContent('completed_files.json').catch(() => this.loadFromLocalStorage('completedAudioFiles', {})),
-                this.githubApi.getFileContent('file_comments.json').catch(() => this.loadFromLocalStorage('audioFileComments', {})),
-                this.githubApi.getFileContent('not_completed_files.json').catch(() => this.loadFromLocalStorage('notCompletedAudioFiles', {}))
+                this.githubApi.getFileContent('deleted_files_history.json').catch(() => ({})),
+                this.githubApi.getFileContent('completed_files.json').catch(() => ({})),
+                this.githubApi.getFileContent('file_comments.json').catch(() => ({})),
+                this.githubApi.getFileContent('not_completed_files.json').catch(() => ({}))
             ]);
 
-            this.deletedFiles = deleted || this.loadFromLocalStorage('deletedAudioFiles', {});
-            this.completedFiles = completed || this.loadFromLocalStorage('completedAudioFiles', {});
-            this.fileComments = comments || this.loadFromLocalStorage('audioFileComments', {});
-            this.notCompletedFiles = notCompleted || this.loadFromLocalStorage('notCompletedAudioFiles', {});
+            this.deletedFiles = deleted || {};
+            this.completedFiles = completed || {};
+            this.fileComments = comments || {};
+            this.notCompletedFiles = notCompleted || {};
 
-            console.log('Shared data loaded successfully');
+            console.log('Shared data loaded successfully from GitHub');
         } catch (error) {
-            console.warn('Error loading shared data, trying localStorage fallback:', error);
-            this.deletedFiles = this.loadFromLocalStorage('deletedAudioFiles', {});
-            this.completedFiles = this.loadFromLocalStorage('completedAudioFiles', {});
-            this.fileComments = this.loadFromLocalStorage('audioFileComments', {});
-            this.notCompletedFiles = this.loadFromLocalStorage('notCompletedAudioFiles', {});
-        }
-    }
-
-    loadFromLocalStorage(key, defaultValue) {
-        try {
-            const data = localStorage.getItem(key);
-            return data ? JSON.parse(data) : defaultValue;
-        } catch (error) {
-            console.warn(`Could not load ${key} from localStorage:`, error);
-            return defaultValue;
+            console.warn('Error loading shared data from GitHub:', error);
+            this.deletedFiles = {};
+            this.completedFiles = {};
+            this.fileComments = {};
+            this.notCompletedFiles = {};
         }
     }
 
