@@ -8,11 +8,16 @@ class GitHubAPI {
 
     async getFileContent(path) {
         try {
-            const response = await fetch(`${this.baseUrl}/repos/${this.owner}/${this.repo}/contents/${path}?ref=${this.branch}`);
+            const response = await fetch(`${this.baseUrl}/repos/${this.owner}/${this.repo}/contents/${path}?ref=${this.branch}`, {
+                headers: {
+                    'Accept': 'application/vnd.github.v3+json'
+                }
+            });
             if (response.ok) {
                 const data = await response.json();
                 return JSON.parse(atob(data.content));
             }
+            console.warn(`File ${path} not found or inaccessible (${response.status})`);
             return {};
         } catch (error) {
             console.warn(`Could not load ${path}:`, error);
@@ -74,7 +79,21 @@ class ChapterViewer {
     async init() {
         await this.loadBookStructure();
         console.log('Book structure loaded:', this.bookStructure);
-        await this.loadSharedData();
+        
+        // Load shared data with timeout - don't block the UI
+        const loadDataWithTimeout = Promise.race([
+            this.loadSharedData(),
+            new Promise(resolve => setTimeout(() => {
+                console.warn('Shared data loading timed out, continuing with empty data');
+                this.deletedFiles = {};
+                this.completedFiles = {};
+                this.fileComments = {};
+                this.notCompletedFiles = {};
+                resolve();
+            }, 5000))
+        ]);
+        
+        await loadDataWithTimeout;
         await this.renderNavigation();
         await this.loadAllAudioManifests();
         await this.loadCharacterData();
@@ -1664,20 +1683,24 @@ class ChapterViewer {
         console.log('Loading shared data from GitHub...');
         try {
             const [deleted, completed, comments, notCompleted] = await Promise.all([
-                this.githubApi.getFileContent('deleted_files_history.json'),
-                this.githubApi.getFileContent('completed_files.json'),
-                this.githubApi.getFileContent('file_comments.json'),
-                this.githubApi.getFileContent('not_completed_files.json')
+                this.githubApi.getFileContent('deleted_files_history.json').catch(() => ({})),
+                this.githubApi.getFileContent('completed_files.json').catch(() => ({})),
+                this.githubApi.getFileContent('file_comments.json').catch(() => ({})),
+                this.githubApi.getFileContent('not_completed_files.json').catch(() => ({}))
             ]);
 
-            this.deletedFiles = deleted;
-            this.completedFiles = completed;
-            this.fileComments = comments;
-            this.notCompletedFiles = notCompleted;
+            this.deletedFiles = deleted || {};
+            this.completedFiles = completed || {};
+            this.fileComments = comments || {};
+            this.notCompletedFiles = notCompleted || {};
 
             console.log('Shared data loaded successfully');
         } catch (error) {
-            console.warn('Error loading shared data:', error);
+            console.warn('Error loading shared data, using empty defaults:', error);
+            this.deletedFiles = {};
+            this.completedFiles = {};
+            this.fileComments = {};
+            this.notCompletedFiles = {};
         }
     }
 
