@@ -1,3 +1,61 @@
+class GitHubAPI {
+    constructor() {
+        this.owner = 'fedear402'; // Your GitHub username
+        this.repo = 'economia-conversada.github.io'; // Your repo name
+        this.branch = 'main';
+        this.baseUrl = 'https://api.github.com';
+    }
+
+    async getFileContent(path) {
+        try {
+            const response = await fetch(`${this.baseUrl}/repos/${this.owner}/${this.repo}/contents/${path}?ref=${this.branch}`);
+            if (response.ok) {
+                const data = await response.json();
+                return JSON.parse(atob(data.content));
+            }
+            return {};
+        } catch (error) {
+            console.warn(`Could not load ${path}:`, error);
+            return {};
+        }
+    }
+
+    async updateFile(path, content, message) {
+        try {
+            // Get current file to get its SHA
+            const currentResponse = await fetch(`${this.baseUrl}/repos/${this.owner}/${this.repo}/contents/${path}?ref=${this.branch}`);
+            let sha = null;
+            if (currentResponse.ok) {
+                const currentData = await currentResponse.json();
+                sha = currentData.sha;
+            }
+
+            const updateData = {
+                message: message,
+                content: btoa(JSON.stringify(content, null, 2)),
+                branch: this.branch
+            };
+
+            if (sha) {
+                updateData.sha = sha;
+            }
+
+            const response = await fetch(`${this.baseUrl}/repos/${this.owner}/${this.repo}/contents/${path}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(updateData)
+            });
+
+            return response.ok;
+        } catch (error) {
+            console.error(`Failed to update ${path}:`, error);
+            return false;
+        }
+    }
+}
+
 class ChapterViewer {
     constructor() {
         this.bookStructure = null;
@@ -5,15 +63,18 @@ class ChapterViewer {
         this.currentSection = null;
         this.audioManifestData = {}; // Cache for audio manifest data
         this.characterData = {}; // Cache for character data
-        this.deletedFiles = this.loadDeletedFiles(); // Track deleted files in localStorage
-        this.completedFiles = this.loadCompletedFiles(); // Track completed files in localStorage
-        this.fileComments = this.loadFileComments(); // Track file comments in localStorage
+        this.githubApi = new GitHubAPI();
+        this.deletedFiles = {};
+        this.completedFiles = {};
+        this.fileComments = {};
+        this.notCompletedFiles = {};
         this.init();
     }
 
     async init() {
         await this.loadBookStructure();
         console.log('Book structure loaded:', this.bookStructure);
+        await this.loadSharedData();
         await this.renderNavigation();
         await this.loadAllAudioManifests();
         await this.loadCharacterData();
@@ -463,10 +524,10 @@ class ChapterViewer {
                 }
                 
                 // Handle OK click
-                okLabel.onclick = () => {
-                    this.markFileAsCompleted(audioFile.path, audioFile.name, true);
+                okLabel.onclick = async () => {
+                    await this.markFileAsCompleted(audioFile.path, audioFile.name, true);
                     if (this.markFileAsNotCompleted) {
-                        this.markFileAsNotCompleted(audioFile.path, audioFile.name, false);
+                        await this.markFileAsNotCompleted(audioFile.path, audioFile.name, false);
                     }
                     
                     // Update visual feedback
@@ -486,12 +547,12 @@ class ChapterViewer {
                 
                 // Handle NOT OK click
                 notOkLabel.onclick = () => {
-                    this.showCommentModal(audioFile.path, audioFile.name, (comment) => {
-                        this.markFileAsCompleted(audioFile.path, audioFile.name, false);
+                    this.showCommentModal(audioFile.path, audioFile.name, async (comment) => {
+                        await this.markFileAsCompleted(audioFile.path, audioFile.name, false);
                         if (!this.markFileAsNotCompleted) {
                             // Initialize not completed functionality if it doesn't exist
                             this.notCompletedFiles = this.notCompletedFiles || {};
-                            this.markFileAsNotCompleted = (filePath, fileName, isNotCompleted) => {
+                            this.markFileAsNotCompleted = async (filePath, fileName, isNotCompleted) => {
                                 if (isNotCompleted) {
                                     this.notCompletedFiles[filePath] = {
                                         not_completed_at: new Date().toISOString(),
@@ -501,27 +562,21 @@ class ChapterViewer {
                                     delete this.notCompletedFiles[filePath];
                                 }
                                 try {
-                                    localStorage.setItem('notCompletedAudioFiles', JSON.stringify(this.notCompletedFiles));
+                                    await this.saveNotCompletedFiles();
                                 } catch (error) {
-                                    console.warn('Could not save not completed files to localStorage:', error);
+                                    console.warn('Could not save not completed files:', error);
                                 }
                             };
                             this.isFileNotCompleted = (filePath) => {
                                 return this.notCompletedFiles && this.notCompletedFiles.hasOwnProperty(filePath);
                             };
-                            // Load existing not completed files
-                            try {
-                                const notCompleted = localStorage.getItem('notCompletedAudioFiles');
-                                this.notCompletedFiles = notCompleted ? JSON.parse(notCompleted) : {};
-                            } catch (error) {
-                                this.notCompletedFiles = {};
-                            }
+                            // Not completed files are loaded in loadSharedData()
                         }
-                        this.markFileAsNotCompleted(audioFile.path, audioFile.name, true);
+                        await this.markFileAsNotCompleted(audioFile.path, audioFile.name, true);
                         
                         // Add comment if provided
                         if (comment && comment.trim()) {
-                            this.addFileComment(audioFile.path, audioFile.name, comment.trim());
+                            await this.addFileComment(audioFile.path, audioFile.name, comment.trim());
                         }
                         
                         // Update visual feedback
@@ -1000,53 +1055,31 @@ class ChapterViewer {
         }
     }
 
-    loadDeletedFiles() {
+    async saveCompletedFiles() {
         try {
-            const deleted = localStorage.getItem('deletedAudioFiles');
-            return deleted ? JSON.parse(deleted) : {};
+            await this.githubApi.updateFile('completed_files.json', this.completedFiles, 'Update completed files');
         } catch (error) {
-            console.warn('Could not load deleted files from localStorage:', error);
-            return {};
+            console.warn('Could not save completed files:', error);
         }
     }
 
-    loadCompletedFiles() {
+    async saveFileComments() {
         try {
-            const completed = localStorage.getItem('completedAudioFiles');
-            return completed ? JSON.parse(completed) : {};
+            await this.githubApi.updateFile('file_comments.json', this.fileComments, 'Update file comments');
         } catch (error) {
-            console.warn('Could not load completed files from localStorage:', error);
-            return {};
+            console.warn('Could not save file comments:', error);
         }
     }
 
-    saveCompletedFiles() {
+    async saveNotCompletedFiles() {
         try {
-            localStorage.setItem('completedAudioFiles', JSON.stringify(this.completedFiles));
+            await this.githubApi.updateFile('not_completed_files.json', this.notCompletedFiles, 'Update not completed files');
         } catch (error) {
-            console.warn('Could not save completed files to localStorage:', error);
+            console.warn('Could not save not completed files:', error);
         }
     }
 
-    loadFileComments() {
-        try {
-            const comments = localStorage.getItem('audioFileComments');
-            return comments ? JSON.parse(comments) : {};
-        } catch (error) {
-            console.warn('Could not load file comments from localStorage:', error);
-            return {};
-        }
-    }
-
-    saveFileComments() {
-        try {
-            localStorage.setItem('audioFileComments', JSON.stringify(this.fileComments));
-        } catch (error) {
-            console.warn('Could not save file comments to localStorage:', error);
-        }
-    }
-
-    addFileComment(filePath, fileName, comment) {
+    async addFileComment(filePath, fileName, comment) {
         if (!this.fileComments[filePath]) {
             this.fileComments[filePath] = [];
         }
@@ -1055,7 +1088,7 @@ class ChapterViewer {
             timestamp: new Date().toISOString(),
             fileName: fileName
         });
-        this.saveFileComments();
+        await this.saveFileComments();
     }
 
     getFileComments(filePath) {
@@ -1255,15 +1288,15 @@ class ChapterViewer {
         this.addCommentsDisplay(filePath, containerElement);
     }
 
-    saveDeletedFiles() {
+    async saveDeletedFiles() {
         try {
-            localStorage.setItem('deletedAudioFiles', JSON.stringify(this.deletedFiles));
+            await this.githubApi.updateFile('deleted_files_history.json', this.deletedFiles, 'Update deleted files');
         } catch (error) {
-            console.warn('Could not save deleted files to localStorage:', error);
+            console.warn('Could not save deleted files:', error);
         }
     }
 
-    markFileAsDeleted(filePath, fileName) {
+    async markFileAsDeleted(filePath, fileName) {
         const timestamp = new Date().toISOString();
         
         // Store locally for immediate hiding
@@ -1272,7 +1305,7 @@ class ChapterViewer {
             reason: 'user_deleted',
             name: fileName
         };
-        this.saveDeletedFiles();
+        await this.saveDeletedFiles();
         
         console.log(`Marked file as deleted: ${fileName} (stored locally)`);
     }
@@ -1281,7 +1314,7 @@ class ChapterViewer {
         return this.deletedFiles.hasOwnProperty(filePath);
     }
 
-    markFileAsCompleted(filePath, fileName, isCompleted) {
+    async markFileAsCompleted(filePath, fileName, isCompleted) {
         if (isCompleted) {
             this.completedFiles[filePath] = {
                 completed_at: new Date().toISOString(),
@@ -1290,7 +1323,7 @@ class ChapterViewer {
         } else {
             delete this.completedFiles[filePath];
         }
-        this.saveCompletedFiles();
+        await this.saveCompletedFiles();
         console.log(`Marked file as ${isCompleted ? 'completed' : 'not completed'}: ${fileName}`);
     }
 
@@ -1501,7 +1534,7 @@ class ChapterViewer {
 
     restoreDeletedFile(filePath, rowElement) {
         delete this.deletedFiles[filePath];
-        this.saveDeletedFiles();
+        await this.saveDeletedFiles();
         rowElement.remove();
         
         // Update navigation to reflect change
@@ -1518,7 +1551,7 @@ class ChapterViewer {
     clearAllDeleted() {
         if (confirm('¿Estás seguro de que quieres limpiar toda la lista de archivos eliminados? Esto restaurará todos los archivos.')) {
             this.deletedFiles = {};
-            this.saveDeletedFiles();
+            await this.saveDeletedFiles();
             this.renderNavigation();
             this.renderDeletedFilesContent();
             console.log('Cleared all deleted files');
@@ -1624,6 +1657,27 @@ class ChapterViewer {
         } catch (error) {
             console.warn('Error loading character data:', error);
             this.characterData = {};
+        }
+    }
+
+    async loadSharedData() {
+        console.log('Loading shared data from GitHub...');
+        try {
+            const [deleted, completed, comments, notCompleted] = await Promise.all([
+                this.githubApi.getFileContent('deleted_files_history.json'),
+                this.githubApi.getFileContent('completed_files.json'),
+                this.githubApi.getFileContent('file_comments.json'),
+                this.githubApi.getFileContent('not_completed_files.json')
+            ]);
+
+            this.deletedFiles = deleted;
+            this.completedFiles = completed;
+            this.fileComments = comments;
+            this.notCompletedFiles = notCompleted;
+
+            console.log('Shared data loaded successfully');
+        } catch (error) {
+            console.warn('Error loading shared data:', error);
         }
     }
 
