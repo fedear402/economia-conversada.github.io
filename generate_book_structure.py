@@ -72,12 +72,12 @@ def generate_book_structure():
                            if os.path.isdir(os.path.join(chapter_path, d)) and 
                            (d.startswith('S') or d == 'SINOPSIS')]
             
-            # Sort sections: SINOPSIS first, then S1, S2, etc.
+            # Sort sections: S1, S2, etc. first, then SINOPSIS last
             def sort_sections(section):
-                if section == 'SINOPSIS':
-                    return (0, 0)  # SINOPSIS comes first
-                elif section.startswith('S') and section[1:].isdigit():
-                    return (1, int(section[1:]))  # Regular sections by number
+                if section.startswith('S') and section[1:].isdigit():
+                    return (0, int(section[1:]))  # Regular sections by number
+                elif section == 'SINOPSIS':
+                    return (1, 0)  # SINOPSIS comes last
                 else:
                     return (2, 0)  # Other sections at the end
             

@@ -8,13 +8,6 @@
       "audioFile": null,
       "sections": [
         {
-          "id": "SINOPSIS",
-          "title": "Sinopsis del capítulo I",
-          "textFile": "book1/C1/SINOPSIS/sinopsis.txt",
-          "audioFile": null,
-          "description": null
-        },
-        {
           "id": "S1",
           "title": "¿Qué es la Economía?",
           "textFile": "book1/C1/S1/main.txt",
@@ -62,6 +55,13 @@
           "textFile": "book1/C1/S7/main.txt",
           "audioFile": "book1/C1/S7/C1S7-description_1-compressed-Laomedeia.mp3",
           "description": "En los jardines del Liceo, en el año 335 a.C., el filósofo Aristóteles se sienta a conversar de manera imaginaria sobre uno de sus temas favoritos: las falacias lógicas y su impacto en la economía. Rodeado de estudiantes y pensadores de la época, reflexiona sobre cómo los errores en el razonamiento afectan las decisiones económicas, desde la gestión de los recursos en las ciudades-estado hasta la distribución de la riqueza. Teofrasto, su alumno predilecto, pregunta cómo sus principios de la lógica se aplicarían hoy para desenmascarar falsas premisas que, según Aristóteles, pueden llevar a políticas económicas equivocadas."
+        },
+        {
+          "id": "SINOPSIS",
+          "title": "Sinopsis del capítulo I",
+          "textFile": "book1/C1/SINOPSIS/sinopsis.txt",
+          "audioFile": null,
+          "description": null
         }
       ]
     },
@@ -71,13 +71,6 @@
       "textFile": "book1/C2/chapter.txt",
       "audioFile": null,
       "sections": [
-        {
-          "id": "SINOPSIS",
-          "title": "Sinopsis del capítulo II",
-          "textFile": "book1/C2/SINOPSIS/sinopsis.txt",
-          "audioFile": null,
-          "description": null
-        },
         {
           "id": "S1",
           "title": "La microeconomía",
@@ -133,6 +126,13 @@
           "textFile": "book1/C2/S8/main.txt",
           "audioFile": "book1/C2/S8/C2S8-main-compressed.mp3",
           "description": "Sócrates y Glaucón caminan por el bullicioso Ágora de Atenas, donde mercaderes y ciudadanos negocian el precio de bienes y servicios. Glaucón, curioso por la relación entre los cambios en los precios y la cantidad de bienes que se compran o se venden, busca respuestas en su mentor."
+        },
+        {
+          "id": "SINOPSIS",
+          "title": "Sinopsis del capítulo II",
+          "textFile": "book1/C2/SINOPSIS/sinopsis.txt",
+          "audioFile": null,
+          "description": null
         }
       ]
     },
@@ -142,13 +142,6 @@
       "textFile": "book1/C3/chapter.txt",
       "audioFile": null,
       "sections": [
-        {
-          "id": "SINOPSIS",
-          "title": "Sinopsis del capítulo III",
-          "textFile": "book1/C3/SINOPSIS/sinopsis.txt",
-          "audioFile": null,
-          "description": null
-        },
         {
           "id": "S1",
           "title": "La teoría de juegos",
@@ -218,6 +211,13 @@
           "textFile": "book1/C3/S10/main.txt",
           "audioFile": "book1/C3/S10/C3S10-description_1-compressed.mp3",
           "description": "En la Universidad de Nueva York, muchos estudiantes y profesores se congregan para una entrevista imaginaria con el economista Thomas Philippon, experto en mercados y competencia. Philippon se sienta, listo para compartir sus conocimientos sobre el impacto de las leyes antimonopolio en la economía moderna. En la sala, se percibe la gran expectativa del público por escuchar su particular visión sobre el estado actual de la competencia en los mercados estadounidenses y también en los europeos."
+        },
+        {
+          "id": "SINOPSIS",
+          "title": "Sinopsis del capítulo III",
+          "textFile": "book1/C3/SINOPSIS/sinopsis.txt",
+          "audioFile": null,
+          "description": null
         }
       ]
     },
@@ -227,13 +227,6 @@
       "textFile": "book1/C4/chapter.txt",
       "audioFile": null,
       "sections": [
-        {
-          "id": "SINOPSIS",
-          "title": "Sinopsis del capítulo IV",
-          "textFile": "book1/C4/SINOPSIS/sinopsis.txt",
-          "audioFile": null,
-          "description": null
-        },
         {
           "id": "S1",
           "title": "La eficiencia de mercado y sus fallas",
@@ -310,6 +303,13 @@
           "textFile": "book1/C4/S11/main.txt",
           "audioFile": "book1/C4/S11/C4S11-description-compressed.mp3",
           "description": "La entrevista imaginaria se lleva a cabo en la Universidad Torcuato Di Tella (UTDT), en la ciudad de Buenos Aires. Un auditorio pequeño, casi lleno de jóvenes interesados en el diálogo que está por comenzar en breve."
+        },
+        {
+          "id": "SINOPSIS",
+          "title": "Sinopsis del capítulo IV",
+          "textFile": "book1/C4/SINOPSIS/sinopsis.txt",
+          "audioFile": null,
+          "description": null
         }
       ]
     },
@@ -319,13 +319,6 @@
       "textFile": "book1/C5/chapter.txt",
       "audioFile": null,
       "sections": [
-        {
-          "id": "SINOPSIS",
-          "title": "Sinopsis del capítulo V",
-          "textFile": "book1/C5/SINOPSIS/sinopsis.txt",
-          "audioFile": null,
-          "description": null
-        },
         {
           "id": "S1",
           "title": "Capitalismo versus comunismo",
@@ -360,6 +353,13 @@
           "textFile": "book1/C5/S5/main.txt",
           "audioFile": "book1/C5/S5/C5S5-description-compressed.mp3",
           "description": "El gran auditorio de la Universidad de Chicago, lleno de estudiantes, académicos y expertos en economía. Los asientos están ocupados mientras algunos permanecen de pie en los pasillos, ansiosos por presenciar un debate imaginario único entre dos gigantes del pensamiento económico. En el escenario, una mesa con dos micrófonos espera a los protagonistas. Las paredes se ven decoradas con retratos de economistas legendarios, creando un ambiente de historia viva. En el centro del escenario, la moderadora se prepara para dar inicio al debate, mientras las conversaciones en la audiencia disminuyen lentamente."
+        },
+        {
+          "id": "SINOPSIS",
+          "title": "Sinopsis del capítulo V",
+          "textFile": "book1/C5/SINOPSIS/sinopsis.txt",
+          "audioFile": null,
+          "description": null
         }
       ]
     },
@@ -369,13 +369,6 @@
       "textFile": "book1/C6/chapter.txt",
       "audioFile": null,
       "sections": [
-        {
-          "id": "SINOPSIS",
-          "title": "Sinopsis del capítulo VI",
-          "textFile": "book1/C6/SINOPSIS/sinopsis.txt",
-          "audioFile": null,
-          "description": null
-        },
         {
           "id": "S1",
           "title": "Entrevista a Rafael Di Tella sobre la economía de la corrupción",
@@ -410,6 +403,13 @@
           "textFile": "book1/C6/S5/main.txt",
           "audioFile": "book1/C6/S5/C6S5-main-compressed.mp3",
           "description": "La entrevista imaginaria tiene lugar en una sala moderna de una universidad. El ambiente es sobrio, con una pequeña audiencia de estudiantes y profesores que prestan atención mientras Yuval Noah Harari conversa con el Presentadora. Un proyector detrás de ellos muestra imágenes relacionadas con la inteligencia artificial, estableciendo el tono de la conversación sobre tecnología y sus implicaciones futuras."
+        },
+        {
+          "id": "SINOPSIS",
+          "title": "Sinopsis del capítulo VI",
+          "textFile": "book1/C6/SINOPSIS/sinopsis.txt",
+          "audioFile": null,
+          "description": null
         }
       ]
     }
