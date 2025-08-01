@@ -66,29 +66,54 @@ def generate_book_structure():
             "sections": []
         }
         
-        # Get all section directories (S1, S2, etc.)
+        # Get all section directories (S1, S2, etc.) and SINOPSIS
         try:
             section_dirs = [d for d in os.listdir(chapter_path)
-                           if os.path.isdir(os.path.join(chapter_path, d)) and d.startswith('S')]
-            section_dirs.sort(key=lambda x: int(x[1:]) if x[1:].isdigit() else 0)
+                           if os.path.isdir(os.path.join(chapter_path, d)) and 
+                           (d.startswith('S') or d == 'SINOPSIS')]
+            
+            # Sort sections: SINOPSIS first, then S1, S2, etc.
+            def sort_sections(section):
+                if section == 'SINOPSIS':
+                    return (0, 0)  # SINOPSIS comes first
+                elif section.startswith('S') and section[1:].isdigit():
+                    return (1, int(section[1:]))  # Regular sections by number
+                else:
+                    return (2, 0)  # Other sections at the end
+            
+            section_dirs.sort(key=sort_sections)
         except:
             section_dirs = []
         
         for section_dir in section_dirs:
             section_path = os.path.join(chapter_path, section_dir)
             
-            # Read section title
-            section_title = read_file_content(os.path.join(section_path, 'title.txt'))
-            if not section_title:
-                section_title = f"Sección {section_dir[1:]}"
-            
-            section_data = {
-                "id": section_dir,
-                "title": section_title,
-                "textFile": f"book1/{chapter_dir}/{section_dir}/main.txt",
-                "audioFile": find_audio_file(section_path),
-                "description": read_file_content(os.path.join(section_path, 'description.txt'))
-            }
+            # Handle SINOPSIS specially
+            if section_dir == 'SINOPSIS':
+                section_title = read_file_content(os.path.join(section_path, 'title.txt'))
+                if not section_title:
+                    section_title = "Sinopsis"
+                
+                section_data = {
+                    "id": section_dir,
+                    "title": section_title,
+                    "textFile": f"book1/{chapter_dir}/{section_dir}/sinopsis.txt",
+                    "audioFile": find_audio_file(section_path),
+                    "description": None  # SINOPSIS doesn't have description.txt
+                }
+            else:
+                # Regular sections (S1, S2, etc.)
+                section_title = read_file_content(os.path.join(section_path, 'title.txt'))
+                if not section_title:
+                    section_title = f"Sección {section_dir[1:]}"
+                
+                section_data = {
+                    "id": section_dir,
+                    "title": section_title,
+                    "textFile": f"book1/{chapter_dir}/{section_dir}/main.txt",
+                    "audioFile": find_audio_file(section_path),
+                    "description": read_file_content(os.path.join(section_path, 'description.txt'))
+                }
             
             chapter_data["sections"].append(section_data)
         

@@ -8,52 +8,59 @@
       "audioFile": null,
       "sections": [
         {
+          "id": "SINOPSIS",
+          "title": "Sinopsis del capítulo I",
+          "textFile": "book1/C1/SINOPSIS/sinopsis.txt",
+          "audioFile": null,
+          "description": null
+        },
+        {
           "id": "S1",
           "title": "¿Qué es la Economía?",
           "textFile": "book1/C1/S1/main.txt",
-          "audioFile": "book1/C1/S1/2-conversacion.mp3",
+          "audioFile": "book1/C1/S1/C1S1-main_1-compressed.mp3",
           "description": "En los jardines de la Academia, en Atenas, Sócrates y Glaucón pasean bajo la sombra de los olivos mientras conversan sobre la economía."
         },
         {
           "id": "S2",
           "title": "La restricción presupuestaria",
           "textFile": "book1/C1/S2/main.txt",
-          "audioFile": "book1/C1/S2/1-escena.wav",
+          "audioFile": "book1/C1/S2/C1S2-description_1-compressed-Laomedeia.mp3",
           "description": "Bajo la luz tenue de la tarde, en los jardines de la Academia, Sócrates y Glaucón caminan entre los árboles. El aire es fresco. Glaucón parece sumido en sus pensamientos mientras Sócrates lo observa, esperando el momento justo para retomar la conversación."
         },
         {
           "id": "S3",
           "title": "La dotación inicial de recursos, la tecnología y la escasez",
           "textFile": "book1/C1/S3/main.txt",
-          "audioFile": "book1/C1/S3/2-conversacion.mp3",
+          "audioFile": "book1/C1/S3/C1S3-main_1-compressed.mp3",
           "description": "Sócrates y Glaucón deambulan por la ladera de una loma que ofrece una vista panorámica de Atenas. Mientras observan los campos cultivados y a los trabajadores a lo lejos, la conversación se dirige hacia la naturaleza de los recursos y cómo las sociedades los utilizan."
         },
         {
           "id": "S4",
           "title": "La racionalidad de los agentes económicos",
           "textFile": "book1/C1/S4/main.txt",
-          "audioFile": "book1/C1/S4/2-conversacion.mp3",
+          "audioFile": "book1/C1/S4/C1S4-description_1-compressed-Laomedeia.mp3",
           "description": "En un rincón tranquilo de la Academia, Sócrates y Glaucón reflexionan sobre la racionalidad en las decisiones humanas, cuestionando si la lógica o las emociones guían nuestras acciones."
         },
         {
           "id": "S5",
           "title": "Los incentivos",
           "textFile": "book1/C1/S5/main.txt",
-          "audioFile": "book1/C1/S5/2-conversacion.mp3",
+          "audioFile": "book1/C1/S5/C1S5-main_2-compressed.mp3",
           "description": "En una tarde apacible en el Ágora de Atenas, Sócrates y Glaucón observan, una vez más, cómo los comerciantes interactúan, vendiendo y comprando. En medio de la actividad del mercado, se disponen a conversar sobre el papel de los incentivos en la economía."
         },
         {
           "id": "S6",
           "title": "El tiempo y su influencia en las decisiones económicas",
           "textFile": "book1/C1/S6/main.txt",
-          "audioFile": null,
+          "audioFile": "book1/C1/S6/C1S6-main-compressed.mp3",
           "description": "Bajo la sombra de un frondoso olivo en las afueras de Atenas, Sócrates y Glaucón contemplan cómo el sol se esconde detrás de las colinas. Mientras observan, como siempre, la actividad de artesanos y mercaderes, surge una conversación sobre el rol del tiempo en las decisiones económicas."
         },
         {
           "id": "S7",
           "title": "Bonus: Diálogo con Aristóteles sobre las falacias en economía",
           "textFile": "book1/C1/S7/main.txt",
-          "audioFile": null,
+          "audioFile": "book1/C1/S7/C1S7-description_1-compressed-Laomedeia.mp3",
           "description": "En los jardines del Liceo, en el año 335 a.C., el filósofo Aristóteles se sienta a conversar de manera imaginaria sobre uno de sus temas favoritos: las falacias lógicas y su impacto en la economía. Rodeado de estudiantes y pensadores de la época, reflexiona sobre cómo los errores en el razonamiento afectan las decisiones económicas, desde la gestión de los recursos en las ciudades-estado hasta la distribución de la riqueza. Teofrasto, su alumno predilecto, pregunta cómo sus principios de la lógica se aplicarían hoy para desenmascarar falsas premisas que, según Aristóteles, pueden llevar a políticas económicas equivocadas."
         }
       ]
@@ -65,59 +72,66 @@
       "audioFile": null,
       "sections": [
         {
+          "id": "SINOPSIS",
+          "title": "Sinopsis del capítulo II",
+          "textFile": "book1/C2/SINOPSIS/sinopsis.txt",
+          "audioFile": null,
+          "description": null
+        },
+        {
           "id": "S1",
           "title": "La microeconomía",
           "textFile": "book1/C2/S1/main.txt",
-          "audioFile": null,
+          "audioFile": "book1/C2/S1/C2S1-description-compressed.mp3",
           "description": "El jardín tranquilo en la Academia de Platón. Sócrates y Glaucón conversan sentados bajo la sombra de un olivo. Los rodean estudiantes atentos al diálogo entre ambos, listos para aprender más sobre la microeconomía y sus ramas."
         },
         {
           "id": "S2",
           "title": "La teoría del consumidor",
           "textFile": "book1/C2/S2/main.txt",
-          "audioFile": null,
+          "audioFile": "book1/C2/S2/C2S2-main-compressed.mp3",
           "description": "Sócrates dialoga con Glaucón sobre el comportamiento del consumidor, explorando cómo las preferencias y restricciones influyen en las decisiones de compra."
         },
         {
           "id": "S3",
           "title": "Bonus: Explorando las preferencias y las curvas de indiferencia",
           "textFile": "book1/C2/S3/main.txt",
-          "audioFile": null,
+          "audioFile": "book1/C2/S3/C2S3-main-compressed.mp3",
           "description": "Sócrates y Glaucón pasean nuevamente por los jardines de la Academia, retomando su discusión sobre cómo las personas eligen entre diferentes bienes según sus preferencias."
         },
         {
           "id": "S4",
           "title": "La teoría del productor y las estructuras de mercado",
           "textFile": "book1/C2/S4/main.txt",
-          "audioFile": null,
+          "audioFile": "book1/C2/S4/C2S4-main-compressed.mp3",
           "description": "En los jardines de la Academia, Sócrates y Glaucón se sientan a la sombra de un olivo; observan a lo lejos cómo varios comerciantes interactúan con sus clientes. Glaucón, intrigado por la dinámica del mercado, busca respuestas en su maestro."
         },
         {
           "id": "S5",
           "title": "El análisis marginal y la economía moderna",
           "textFile": "book1/C2/S5/main.txt",
-          "audioFile": null,
+          "audioFile": "book1/C2/S5/C2S5-main-compressed.mp3",
           "description": "Sócrates y Glaucón pasean por las colinas que rodean Atenas. El viento fresco y el paisaje los invita a una conversación profunda sobre la importancia del análisis marginal para el estudio de la economía."
         },
         {
           "id": "S6",
           "title": "Las leyes de oferta y demanda",
           "textFile": "book1/C2/S6/main.txt",
-          "audioFile": null,
+          "audioFile": "book1/C2/S6/C2S6-main-compressed.mp3",
           "description": "Sócrates y Glaucón se sientan junto a una fuente en el Ágora de Atenas, observando cómo los comerciantes venden sus productos, desde frutas frescas hasta artesanías. Intrigado por la actividad a su alrededor, Glaucón reflexiona sobre cómo se determina el precio de los bienes."
         },
         {
           "id": "S7",
           "title": "Entrevista a Adam Smith sobre economía y sociedad",
           "textFile": "book1/C2/S7/main.txt",
-          "audioFile": null,
+          "audioFile": "book1/C2/S7/C2S7-main-compressed.mp3",
           "description": "Nos encontramos en una biblioteca acogedora en Edimburgo, Escocia. El entrevistador, un respetado profesor de economía, se sienta frente a Adam Smith, el célebre filósofo y economista del siglo XVIII, cuyo trabajo en La riqueza de las naciones cambió para siempre la forma en que entendemos la economía de mercado. La sala está llena de una audiencia compuesta por estudiantes y académicos, todos expectantes por escuchar las reflexiones imaginarias del padre de la economía."
         },
         {
           "id": "S8",
           "title": "La elasticidad y sus aplicaciones",
           "textFile": "book1/C2/S8/main.txt",
-          "audioFile": null,
+          "audioFile": "book1/C2/S8/C2S8-main-compressed.mp3",
           "description": "Sócrates y Glaucón caminan por el bullicioso Ágora de Atenas, donde mercaderes y ciudadanos negocian el precio de bienes y servicios. Glaucón, curioso por la relación entre los cambios en los precios y la cantidad de bienes que se compran o se venden, busca respuestas en su mentor."
         }
       ]
@@ -129,73 +143,80 @@
       "audioFile": null,
       "sections": [
         {
+          "id": "SINOPSIS",
+          "title": "Sinopsis del capítulo III",
+          "textFile": "book1/C3/SINOPSIS/sinopsis.txt",
+          "audioFile": null,
+          "description": null
+        },
+        {
           "id": "S1",
           "title": "La teoría de juegos",
           "textFile": "book1/C3/S1/main.txt",
-          "audioFile": null,
+          "audioFile": "book1/C3/S1/C3S1-main-compressed.mp3",
           "description": "Sócrates y Glaucón pasean por los jardines de la Academia, conversando sobre cómo las empresas toman decisiones en un mercado competitivo. Intrigado por las interacciones entre los productores, Glaucón quiere entender mejor las decisiones estratégicas y la influencia que tienen sobre el comportamiento de los competidores."
         },
         {
           "id": "S2",
           "title": "Coordinación y juegos repetidos",
           "textFile": "book1/C3/S2/main.txt",
-          "audioFile": null,
+          "audioFile": "book1/C3/S2/C3S2-main_1-compressed.mp3",
           "description": "Mientras el sol desciende sobre los jardines de la Academia, Sócrates y Glaucón reanudan su paseo, retomando la conversación del día anterior. Glaucón, aún reflexionando sobre el dilema del prisionero y la falta de cooperación entre los jugadores, tiene una inquietud que no pudo resolver."
         },
         {
           "id": "S3",
           "title": "Conceptos avanzados de la teoría de juegos",
           "textFile": "book1/C3/S3/main.txt",
-          "audioFile": null,
+          "audioFile": "book1/C3/S3/C3S3-description_1-compressed.mp3",
           "description": "Glaucón se muestra intrigado y ansioso por conocer más sobre los aspectos complejos de la teoría de juegos. Impulsado por esa curiosidad, Sócrates se adentra en una discusión más profunda y detallada sobre dicha teoría."
         },
         {
           "id": "S4",
           "title": "Entrevista a John Nash sobre teoría de juegos",
           "textFile": "book1/C3/S4/main.txt",
-          "audioFile": null,
+          "audioFile": "book1/C3/S4/C3S4-description_1-compressed.mp3",
           "description": "En un auditorio de la Universidad de Princeton, el ambiente es de expectación. La entrevistadora, una profesor de economía, está preparada para dialogar de manera imaginaria con el célebre matemático John Nash, cuyas contribuciones a la teoría de juegos revolucionaron el análisis estratégico en economía y otros campos."
         },
         {
           "id": "S5",
           "title": "La competencia perfecta",
           "textFile": "book1/C3/S5/main.txt",
-          "audioFile": null,
+          "audioFile": "book1/C3/S5/C3S5-description_1-compressed.mp3",
           "description": "Una tarde tranquila en la Academia, Sócrates y Glaucón pasean por los jardines, mientras conversan sobre economía y funcionamiento de los mercados. El bullicio del cercano mercado se mezcla con el murmullo de los estudiantes y filósofos que discuten temas diversos bajo la sombra de los árboles."
         },
         {
           "id": "S6",
           "title": "El monopolio",
           "textFile": "book1/C3/S6/main.txt",
-          "audioFile": null,
+          "audioFile": "book1/C3/S6/C3S6-description_1-compressed.mp3",
           "description": "En una tarde nublada en el Ágora, Sócrates y Glaucón se sientan en un rincón tranquilo, alejados del trajín de los mercaderes. El tema de conversación cambia de los mercados competitivos a una estructura de mercado menos común, pero poderosa: el monopolio."
         },
         {
           "id": "S7",
           "title": "La competencia monopolística",
           "textFile": "book1/C3/S7/main.txt",
-          "audioFile": null,
+          "audioFile": "book1/C3/S7/C3S7-main-compressed.mp3",
           "description": "En una fresca mañana en la Academia, Sócrates y Glaucón se reúnen bajo la sombra de un olivo. Se oyen conversaciones de estudiantes que discuten teorías económicas. Glaucón, curioso como siempre, tiene una pregunta sobre un tipo de mercado que escuchó mencionar: la competencia monopolística."
         },
         {
           "id": "S8",
           "title": "El oligopolio",
           "textFile": "book1/C3/S8/main.txt",
-          "audioFile": null,
+          "audioFile": "book1/C3/S8/C3S8-main_1-compressed.mp3",
           "description": "En un día soleado, Sócrates y Glaucón caminan por el mercado principal de Atenas. Mientras observan a los comerciantes intercambiar bienes, Glaucón menciona un tipo de mercado que escuchó recientemente: el oligopolio. Deciden sentarse en un banco cerca de la plaza para discutir más sobre este concepto."
         },
         {
           "id": "S9",
           "title": "Bonus: Entrevista a Jean Tirole sobre los tipos de competencia en un oligopolio",
           "textFile": "book1/C3/S9/main.txt",
-          "audioFile": null,
+          "audioFile": "book1/C3/S9/C3S9-description_1-compressed.mp3",
           "description": "En un auditorio universitario en Toulouse, el renombrado economista Jean Tirole, galardonado con el Premio Nobel por su trabajo en la teoría de juegos y la organización industrial, se prepara para una entrevista imaginaria. El tema central: los distintos modelos posibles de competencia en un oligopolio. Frente a la expectación de la audiencia, el entrevistador comienza la conversación para desentrañar los conceptos clave que revolucionaron el análisis de los mercados con pocos competidores."
         },
         {
           "id": "S10",
           "title": "Thomas Philippon sobre la defensa de la competencia",
           "textFile": "book1/C3/S10/main.txt",
-          "audioFile": null,
+          "audioFile": "book1/C3/S10/C3S10-description_1-compressed.mp3",
           "description": "En la Universidad de Nueva York, muchos estudiantes y profesores se congregan para una entrevista imaginaria con el economista Thomas Philippon, experto en mercados y competencia. Philippon se sienta, listo para compartir sus conocimientos sobre el impacto de las leyes antimonopolio en la economía moderna. En la sala, se percibe la gran expectativa del público por escuchar su particular visión sobre el estado actual de la competencia en los mercados estadounidenses y también en los europeos."
         }
       ]
@@ -207,52 +228,59 @@
       "audioFile": null,
       "sections": [
         {
+          "id": "SINOPSIS",
+          "title": "Sinopsis del capítulo IV",
+          "textFile": "book1/C4/SINOPSIS/sinopsis.txt",
+          "audioFile": null,
+          "description": null
+        },
+        {
           "id": "S1",
           "title": "La eficiencia de mercado y sus fallas",
           "textFile": "book1/C4/S1/main.txt",
-          "audioFile": null,
+          "audioFile": "book1/C4/S1/C4S1-main-compressed.mp3",
           "description": "En el jardín de la Academia, Sócrates y Glaucón conversan sobre la eficiencia y las fallas de mercado, explorando cómo las externalidades y los monopolios pueden desviar la economía de su equilibrio óptimo."
         },
         {
           "id": "S2",
           "title": "George Akerlof sobre la asimetría de información y el mercado de los “limones”",
           "textFile": "book1/C4/S2/main.txt",
-          "audioFile": null,
+          "audioFile": "book1/C4/S2/C4S2-main-compressed.mp3",
           "description": "Nos encontramos en el auditorio de la Universidad de California, Berkeley, donde George Akerlof, premio Nobel de Economía, enseña desde hace muchos años. Es una mañana primaveral y el público, compuesto por numerosos estudiantes y académicos, espera con atención el comienzo de la entrevista imaginaria. El entrevistador es un periodista económico, muy activo en redes sociales."
         },
         {
           "id": "S3",
           "title": "Ronald Coase sobre la naturaleza de las empresas y las externalidades",
           "textFile": "book1/C4/S3/main.txt",
-          "audioFile": null,
+          "audioFile": "book1/C4/S3/C4S3-main-compressed.mp3",
           "description": "Nos encontramos en la Universidad de Chicago, donde Ronald Coase imparte clases desde hace muchos años. Es una tarde de otoño, y los colores cálidos de las hojas contrastan con la imponente arquitectura gótica del campus. En el interior, la sala está llena de académicos, economistas y estudiantes que esperan la llegada del hombre cuyas ideas sobre las empresas y el problema de los costos sociales revolucionaron la teoría económica. El moderador, un destacado profesor, se prepara para iniciar la entrevista imaginaria."
         },
         {
           "id": "S4",
           "title": "Bienes públicos y la tragedia de los comunes",
           "textFile": "book1/C4/S4/main.txt",
-          "audioFile": null,
+          "audioFile": "book1/C4/S4/C4S4-main-compressed.mp3",
           "description": "En el jardín de la Academia, Sócrates y Glaucón se reúnen para continuar una conversación pendiente. Hoy, el maestro profundizará en un tema crucial: los bienes públicos —una lección que promete desafiar las ideas de Glaucón sobre el papel del mercado y el Estado—."
         },
         {
           "id": "S5",
           "title": "Sobre cómo interviene el gobierno en la economía",
           "textFile": "book1/C4/S5/main.txt",
-          "audioFile": null,
+          "audioFile": "book1/C4/S5/C4S5-description_1-compressed.mp3",
           "description": "Bajo la sombra de un gran olivo de la Academia, Sócrates y Glaucón conversan sobre el rol del gobierno en la economía, y la importancia de la intervención estatal para corregir fallas de mercado y promover el bienestar social."
         },
         {
           "id": "S6",
           "title": "Debate entre Friedrich von Hayek y Joseph Stiglitz",
           "textFile": "book1/C4/S6/main.txt",
-          "audioFile": null,
+          "audioFile": "book1/C4/S6/C4S6-description_1-compressed.mp3",
           "description": "Un auditorio lleno en una prestigiosa universidad. El público, compuesto por estudiantes, académicos y profesionales, espera este debate entre dos economistas de renombre mundial: Friedrich von Hayek, defensor a ultranza del libre mercado y crítico de la intervención gubernamental, y Joseph Stiglitz, proponente de la intervención del gobierno para corregir fallas del mercado. El tema del debate imaginario es: ¿Debe el gobierno intervenir en los mercados de bienes y servicios?"
         },
         {
           "id": "S7",
           "title": "Entrevista a Frédéric Bastiat sobre el Estado",
           "textFile": "book1/C4/S7/main.txt",
-          "audioFile": "book1/C4/S7/C4S7-main-compressed.mp3",
+          "audioFile": "book1/C4/S7/C4S7-description-compressed.mp3",
           "description": "En un salón parisino, un entrevistador, seducido por las ideas de Bastiat, se acerca para discutir sus teorías sobre el papel del Estado en la economía. Bastiat, con su aguda claridad, expone cómo las políticas intervencionistas muchas veces ocultan costos no visibles para la sociedad, destacando su famosa “falacia de la ventana rota”. A medida que la conversación imaginaria avanza, abordan la importancia de la libertad de mercado, y de qué manera las decisiones económicas impactan en los individuos y en el bienestar general."
         },
         {
@@ -273,14 +301,14 @@
           "id": "S10",
           "title": "Bonus: Conceptos avanzados de econometría",
           "textFile": "book1/C4/S10/main.txt",
-          "audioFile": "book1/C4/S10/C4S10-main-compressed.mp3",
+          "audioFile": "book1/C4/S10/C4S10-main_1-compressed.mp3",
           "description": "El sol comienza a descender sobre Crotona, iluminando de dorado las columnas de la escuela de matemáticas. En el interior, el sonido del cálido debate entre discípulos de Pitágoras llena la sala. Pergaminos con ecuaciones y tablas de datos se encuentran dispersos en los bancos, mientras Sócrates y Glaucón continúan su exploración sobre cómo la matemática y la estadística ayudan a entender el mundo económico."
         },
         {
           "id": "S11",
           "title": "Entrevista a Ernesto Schargrodsky sobre microeconomía aplicada",
           "textFile": "book1/C4/S11/main.txt",
-          "audioFile": null,
+          "audioFile": "book1/C4/S11/C4S11-description-compressed.mp3",
           "description": "La entrevista imaginaria se lleva a cabo en la Universidad Torcuato Di Tella (UTDT), en la ciudad de Buenos Aires. Un auditorio pequeño, casi lleno de jóvenes interesados en el diálogo que está por comenzar en breve."
         }
       ]
@@ -292,38 +320,45 @@
       "audioFile": null,
       "sections": [
         {
+          "id": "SINOPSIS",
+          "title": "Sinopsis del capítulo V",
+          "textFile": "book1/C5/SINOPSIS/sinopsis.txt",
+          "audioFile": null,
+          "description": null
+        },
+        {
           "id": "S1",
           "title": "Capitalismo versus comunismo",
           "textFile": "book1/C5/S1/main.txt",
-          "audioFile": "book1/C5/S1/C5S1-main-compressed.mp3",
+          "audioFile": "book1/C5/S1/C5S1-main_1-compressed.mp3",
           "description": "Sentados en el jardín de la Academia, Sócrates y Glaucón discuten las virtudes y defectos del capitalismo, explorando cómo cada sistema afecta el crecimiento económico a largo plazo."
         },
         {
           "id": "S2",
           "title": "Entrevista a Joseph Schumpeter sobre innovación y capitalismo",
           "textFile": "book1/C5/S2/main.txt",
-          "audioFile": "book1/C5/S2/C5S2-main-compressed.mp3",
+          "audioFile": "book1/C5/S2/C5S2-description-compressed.mp3",
           "description": "Una oficina en la Universidad de Viena, con una gran ventana por donde se ven los Alpes. Joseph Schumpeter se sienta frente a su mesa de trabajo, con una expresión atenta, listo para abordar las preguntas imaginarias del entrevistador. Es una tarde de otoño de 1946, y el aire frío trae consigo una energía intelectual que llena la sala."
         },
         {
           "id": "S3",
           "title": "Entrevista a Karl Marx sobre sus ideas económicas y políticas",
           "textFile": "book1/C5/S3/main.txt",
-          "audioFile": "book1/C5/S3/C5S3-main-compressed.mp3",
+          "audioFile": "book1/C5/S3/C5S3-description-compressed.mp3",
           "description": "En un salón modesto pero lleno de historia, en Londres, un profesor de economía se prepara para entrevistar de manera imaginaria a Karl Marx, influyente filósofo y economista alemán. Estudiantes, académicos y entusiastas del pensamiento económico llenan la sala, en espera de escuchar de primera mano las ideas revolucionarias de Marx sobre el capitalismo, el socialismo y el comunismo. Marx se sienta frente al entrevistador, listo para compartir su visión crítica sobre las estructuras económicas contemporáneas y debatir el destino inevitable que, según él, aguarda al capitalismo."
         },
         {
           "id": "S4",
           "title": "¿Qué es el liberalismo económico?",
           "textFile": "book1/C5/S4/main.txt",
-          "audioFile": "book1/C5/S4/C5S4-main-compressed.mp3",
+          "audioFile": "book1/C5/S4/C5S4-description-compressed.mp3",
           "description": "Bajo los altos olivos del Ágora, Sócrates y Glaucón conversan sobre el liberalismo, explorando sus principios de libertad individual, mercado libre y propiedad privada, y su impacto en la organización política y económica del Estado."
         },
         {
           "id": "S5",
           "title": "Bonus: Friedman y von Hayek debaten sobre el liberalismo",
           "textFile": "book1/C5/S5/main.txt",
-          "audioFile": "book1/C5/S5/C5S5-main-compressed.mp3",
+          "audioFile": "book1/C5/S5/C5S5-description-compressed.mp3",
           "description": "El gran auditorio de la Universidad de Chicago, lleno de estudiantes, académicos y expertos en economía. Los asientos están ocupados mientras algunos permanecen de pie en los pasillos, ansiosos por presenciar un debate imaginario único entre dos gigantes del pensamiento económico. En el escenario, una mesa con dos micrófonos espera a los protagonistas. Las paredes se ven decoradas con retratos de economistas legendarios, creando un ambiente de historia viva. En el centro del escenario, la moderadora se prepara para dar inicio al debate, mientras las conversaciones en la audiencia disminuyen lentamente."
         }
       ]
@@ -335,17 +370,24 @@
       "audioFile": null,
       "sections": [
         {
+          "id": "SINOPSIS",
+          "title": "Sinopsis del capítulo VI",
+          "textFile": "book1/C6/SINOPSIS/sinopsis.txt",
+          "audioFile": null,
+          "description": null
+        },
+        {
           "id": "S1",
           "title": "Entrevista a Rafael Di Tella sobre la economía de la corrupción",
           "textFile": "book1/C6/S1/main.txt",
-          "audioFile": "book1/C6/S1/C6S1-main-compressed.mp3",
+          "audioFile": "book1/C6/S1/C6S1-description_1-compressed.mp3",
           "description": "Una sala de conferencias íntima y moderna en la Universidad de Harvard. La entrevistadora, renombrada académica en economía, se dispone a entrevistar imaginariamente a Rafael Di Tella, destacado economista conocido por su investigación en economía del comportamiento, corrupción y políticas públicas en América Latina. La sala está llena de estudiantes, profesores, y apasionados de la economía que esperan con interés escuchar las perspectivas innovadoras de Di Tella."
         },
         {
           "id": "S2",
           "title": "Entrevista a Elinor Ostrom sobre crecimiento sostenible y gestión de recursos comunes",
           "textFile": "book1/C6/S2/main.txt",
-          "audioFile": "book1/C6/S2/C6S2-main-compressed.mp3",
+          "audioFile": "book1/C6/S2/C6S2-description_1-compressed.mp3",
           "description": "La entrevista imaginaria tiene lugar en el Auditorio Principal de la Universidad de Ámsterdam, reconocida por su enfoque en estudios ambientales y sostenibilidad. El auditorio está lleno de estudiantes, académicos y activistas. El ambiente es académico pero accesible, con una mesa en el centro. Un proyector detrás de los panelistas muestra gráficos de la tragedia de los comunes, la regla de Hotelling, y modelos de gestión comunitaria de los recursos naturales. Elinor Ostrom, ganadora del Premio Nobel de Economía, está preparada para compartir sus ideas sobre la importancia de una gobernanza adecuada de los recursos comunes para garantizar un crecimiento sostenible."
         },
         {
