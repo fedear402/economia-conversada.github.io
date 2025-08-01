@@ -383,28 +383,76 @@ class ChapterViewer {
                 const controlsContainer = document.createElement('div');
                 controlsContainer.style.display = 'flex';
                 controlsContainer.style.alignItems = 'center';
-                controlsContainer.style.gap = '8px';
+                controlsContainer.style.gap = '12px';
                 
-                // Add completion checkbox
+                // Add delete button (on the left, prettier)
+                const deleteBtn = document.createElement('button');
+                deleteBtn.className = 'audio-delete-btn';
+                deleteBtn.innerHTML = '×';
+                deleteBtn.title = `Eliminar ${audioFile.name}`;
+                deleteBtn.style.backgroundColor = '#e74c3c';
+                deleteBtn.style.color = 'white';
+                deleteBtn.style.border = 'none';
+                deleteBtn.style.borderRadius = '50%';
+                deleteBtn.style.width = '24px';
+                deleteBtn.style.height = '24px';
+                deleteBtn.style.fontSize = '16px';
+                deleteBtn.style.cursor = 'pointer';
+                deleteBtn.style.display = 'flex';
+                deleteBtn.style.alignItems = 'center';
+                deleteBtn.style.justifyContent = 'center';
+                deleteBtn.style.transition = 'all 0.2s ease';
+                deleteBtn.onmouseover = () => {
+                    deleteBtn.style.backgroundColor = '#c0392b';
+                    deleteBtn.style.transform = 'scale(1.1)';
+                };
+                deleteBtn.onmouseout = () => {
+                    deleteBtn.style.backgroundColor = '#e74c3c';
+                    deleteBtn.style.transform = 'scale(1)';
+                };
+                deleteBtn.onclick = (e) => {
+                    e.preventDefault();
+                    this.confirmDeleteAudioFromSection(audioFile, audioPlayerContainer, type, parentChapter);
+                };
+                
+                // Add completion checkbox with label (on the right)
+                const completionContainer = document.createElement('div');
+                completionContainer.style.display = 'flex';
+                completionContainer.style.alignItems = 'center';
+                completionContainer.style.gap = '6px';
+                
                 const completionCheckbox = document.createElement('input');
                 completionCheckbox.type = 'checkbox';
                 completionCheckbox.checked = isCompleted;
-                completionCheckbox.title = `Marcar como ${isCompleted ? 'no completado' : 'completado'}`;
                 completionCheckbox.style.transform = 'scale(1.2)';
                 completionCheckbox.style.cursor = 'pointer';
-                completionCheckbox.onchange = (e) => {
-                    const isNowCompleted = e.target.checked;
+                
+                const completionLabel = document.createElement('span');
+                completionLabel.textContent = isCompleted ? 'OK' : 'OK?';
+                completionLabel.style.fontSize = '14px';
+                completionLabel.style.color = isCompleted ? '#27ae60' : '#666';
+                completionLabel.style.fontWeight = isCompleted ? 'bold' : 'normal';
+                completionLabel.style.cursor = 'pointer';
+                
+                // Handle both checkbox and label clicks
+                const toggleCompletion = () => {
+                    const isNowCompleted = !completionCheckbox.checked;
+                    completionCheckbox.checked = isNowCompleted;
                     this.markFileAsCompleted(audioFile.path, audioFile.name, isNowCompleted);
                     
                     // Update visual feedback
                     if (isNowCompleted) {
                         audioLabel.style.color = '#27ae60';
                         audioLabel.style.fontWeight = 'bold';
-                        e.target.title = 'Marcar como no completado';
+                        completionLabel.textContent = 'OK';
+                        completionLabel.style.color = '#27ae60';
+                        completionLabel.style.fontWeight = 'bold';
                     } else {
                         audioLabel.style.color = '';
                         audioLabel.style.fontWeight = '';
-                        e.target.title = 'Marcar como completado';
+                        completionLabel.textContent = 'OK?';
+                        completionLabel.style.color = '#666';
+                        completionLabel.style.fontWeight = 'normal';
                     }
                     
                     // Update To-Do view if currently visible
@@ -413,18 +461,15 @@ class ChapterViewer {
                     }
                 };
                 
-                const deleteBtn = document.createElement('button');
-                deleteBtn.className = 'audio-delete-btn';
-                deleteBtn.innerHTML = '×';
-                deleteBtn.title = `Eliminar ${audioFile.name}`;
-                deleteBtn.onclick = (e) => {
-                    e.preventDefault();
-                    this.confirmDeleteAudioFromSection(audioFile, audioPlayerContainer, type, parentChapter);
-                };
+                completionCheckbox.onchange = toggleCompletion;
+                completionLabel.onclick = toggleCompletion;
+                
+                completionContainer.appendChild(completionCheckbox);
+                completionContainer.appendChild(completionLabel);
                 
                 audioLabelContainer.appendChild(audioLabel);
-                controlsContainer.appendChild(completionCheckbox);
                 controlsContainer.appendChild(deleteBtn);
+                controlsContainer.appendChild(completionContainer);
                 audioLabelContainer.appendChild(controlsContainer);
                 audioPlayerContainer.appendChild(audioLabelContainer);
                 
