@@ -172,43 +172,23 @@ body {
     margin: 0;
     transition: transform 0.3s ease;
     overflow-x: auto;
-    overflow-y: visible;
-    white-space: nowrap;
-    display: flex;
-    align-items: flex-start;
-    gap: 15px;
 }
 
 .chapter-header::-webkit-scrollbar, .section-header::-webkit-scrollbar {
-    height: 6px;
+    height: 4px;
 }
 
 .chapter-header::-webkit-scrollbar-track, .section-header::-webkit-scrollbar-track {
     background: #f1f1f1;
-    border-radius: 3px;
 }
 
 .chapter-header::-webkit-scrollbar-thumb, .section-header::-webkit-scrollbar-thumb {
-    background: #888;
-    border-radius: 3px;
+    background: #ccc;
+    border-radius: 2px;
 }
 
 .chapter-header::-webkit-scrollbar-thumb:hover, .section-header::-webkit-scrollbar-thumb:hover {
-    background: #555;
-}
-
-.header-controls {
-    position: absolute !important;
-    top: 5px !important;
-    right: 10px !important;
-    display: flex !important;
-    gap: 5px !important;
-    z-index: 101 !important;
-}
-
-.header-controls button:hover {
-    background: #f0f0f0 !important;
-    border-color: #999 !important;
+    background: #999;
 }
 
 .chapter-title, .section-title {
@@ -576,8 +556,6 @@ body {
         top: auto;
         margin-bottom: 20px;
         border-radius: 6px;
-        white-space: normal; /* Allow wrapping on mobile */
-        padding-right: 60px; /* Make room for controls */
     }
     
     .todo-content-view {

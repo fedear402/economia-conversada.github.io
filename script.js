@@ -481,53 +481,41 @@ class ChapterViewer {
         
         const header = document.createElement('div');
         header.className = `${type}-header`;
-        header.id = `${type}-header`;
         
-        // Add header controls container
-        const headerControls = document.createElement('div');
-        headerControls.className = 'header-controls';
-        headerControls.style.cssText = `
-            position: absolute;
-            top: 5px;
-            right: 10px;
-            display: flex;
-            gap: 5px;
-            z-index: 101;
-        `;
-        
-        // Add toggle button
+        // Add simple toggle button
         const toggleBtn = document.createElement('button');
         toggleBtn.innerHTML = '−';
-        toggleBtn.title = 'Hide/Show Header';
+        toggleBtn.title = 'Hide Header';
         toggleBtn.style.cssText = `
-            width: 25px;
-            height: 25px;
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 20px;
+            height: 20px;
             border: 1px solid #ccc;
             background: #fff;
-            border-radius: 3px;
+            border-radius: 2px;
             cursor: pointer;
-            font-size: 14px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            font-size: 12px;
+            line-height: 1;
+            z-index: 101;
         `;
         
         let headerVisible = true;
         toggleBtn.onclick = () => {
-            headerVisible = !headerVisible;
             if (headerVisible) {
+                header.style.transform = 'translateY(-90%)';
+                toggleBtn.innerHTML = '+';
+                toggleBtn.title = 'Show Header';
+            } else {
                 header.style.transform = 'translateY(0)';
                 toggleBtn.innerHTML = '−';
                 toggleBtn.title = 'Hide Header';
-            } else {
-                header.style.transform = 'translateY(-85%)';
-                toggleBtn.innerHTML = '+';
-                toggleBtn.title = 'Show Header';
             }
+            headerVisible = !headerVisible;
         };
         
-        headerControls.appendChild(toggleBtn);
-        header.appendChild(headerControls);
+        header.appendChild(toggleBtn);
         
         // Add breadcrumb for sections
         if (type === 'section' && parentChapter) {
@@ -537,47 +525,18 @@ class ChapterViewer {
             header.appendChild(breadcrumb);
         }
         
-        // Create content wrapper for flexible layout
-        const headerContent = document.createElement('div');
-        headerContent.className = 'header-content';
-        headerContent.style.cssText = `
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            padding-right: 40px;
-            min-width: 0;
-            flex: 1;
-        `;
-        
         const title = document.createElement('h1');
         title.className = `${type}-title`;
         title.textContent = item.title;
-        title.style.cssText = `
-            margin: 0;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-            min-width: 0;
-        `;
-        
-        headerContent.appendChild(title);
+        header.appendChild(title);
         
         // Add description for sections
         if (type === 'section' && item.description) {
             const description = document.createElement('div');
             description.className = 'section-description';
             description.textContent = item.description;
-            description.style.cssText = `
-                font-size: 0.9em;
-                color: #666;
-                overflow: hidden;
-                text-overflow: ellipsis;
-                white-space: nowrap;
-            `;
-            headerContent.appendChild(description);
+            header.appendChild(description);
         }
-        
-        header.appendChild(headerContent);
         
         // Check if audio files exist and add players
         if (item.audioFiles && item.audioFiles.length > 0) {
