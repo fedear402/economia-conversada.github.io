@@ -1566,7 +1566,7 @@ class ChapterViewer {
                 restoreBtn.style.borderRadius = '3px';
                 restoreBtn.style.cursor = 'pointer';
                 restoreBtn.style.fontSize = '0.8em';
-                restoreBtn.onclick = () => this.restoreDeletedFile(filePath, row);
+                restoreBtn.onclick = async () => await this.restoreDeletedFile(filePath, row);
                 
                 actionsCell.appendChild(restoreBtn);
                 
@@ -1589,7 +1589,7 @@ class ChapterViewer {
         content.style.paddingTop = '20px';
     }
 
-    restoreDeletedFile(filePath, rowElement) {
+    async restoreDeletedFile(filePath, rowElement) {
         delete this.deletedFiles[filePath];
         await this.saveDeletedFiles();
         rowElement.remove();
@@ -1605,7 +1605,7 @@ class ChapterViewer {
         }
     }
 
-    clearAllDeleted() {
+    async clearAllDeleted() {
         if (confirm('¿Estás seguro de que quieres limpiar toda la lista de archivos eliminados? Esto restaurará todos los archivos.')) {
             this.deletedFiles = {};
             await this.saveDeletedFiles();
