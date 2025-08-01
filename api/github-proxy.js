@@ -11,6 +11,12 @@ export default async function handler(req, res) {
   }
 
   try {
+    console.log('GitHub API Debug:', {
+      path,
+      hasToken: !!process.env.GITHUB_TOKEN,
+      tokenLength: process.env.GITHUB_TOKEN?.length || 0
+    });
+
     // Get current file SHA if it exists
     const currentResponse = await fetch(
       `https://api.github.com/repos/fedear402/economia-conversada.github.io/contents/${path}`,
