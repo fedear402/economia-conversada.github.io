@@ -2,6 +2,13 @@
   "title": "Economía Conversada",
   "chapters": [
     {
+      "id": "Intro",
+      "title": "Introducción",
+      "textFile": "book1/Intro/introduction.txt",
+      "audioFile": "book1/Intro/book1Intro-introduction-sadachbia-SAMPLE-compressed.mp3",
+      "sections": []
+    },
+    {
       "id": "C1",
       "title": "I",
       "textFile": "book1/C1/chapter.txt",

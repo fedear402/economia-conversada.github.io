@@ -41,6 +41,23 @@ def generate_book_structure():
         "chapters": []
     }
     
+    # First, handle the Introduction if it exists
+    intro_path = os.path.join(book_path, 'Intro')
+    if os.path.exists(intro_path) and os.path.isdir(intro_path):
+        intro_title = read_file_content(os.path.join(intro_path, 'title.txt'))
+        if not intro_title:
+            intro_title = "Introducción"
+        
+        intro_data = {
+            "id": "Intro",
+            "title": intro_title,
+            "textFile": "book1/Intro/introduction.txt",
+            "audioFile": find_audio_file(intro_path),
+            "sections": []
+        }
+        book_structure["chapters"].append(intro_data)
+        print(f"Added Introduction: {intro_title}")
+    
     # Get all chapter directories (C1, C2, etc.)
     try:
         chapter_dirs = [d for d in os.listdir(book_path) 
