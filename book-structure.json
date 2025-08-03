@@ -60,7 +60,7 @@
           "id": "SINOPSIS",
           "title": "Sinopsis del capítulo I",
           "textFile": "book1/C1/SINOPSIS/sinopsis.txt",
-          "audioFile": null,
+          "audioFile": "book1/C1/SINOPSIS/C1SINOPSIS-sinopsis-achernar-SAMPLE-compressed.mp3",
           "description": null
         }
       ]
@@ -401,7 +401,7 @@
           "id": "S5",
           "title": "Bonus: Entrevista a Yuval Noah Harari sobre los peligros de la IA",
           "textFile": "book1/C6/S5/main.txt",
-          "audioFile": "book1/C6/S5/C6S5-main-compressed.mp3",
+          "audioFile": "book1/C6/S5/C6S5-description-compressed.mp3",
           "description": "La entrevista imaginaria tiene lugar en una sala moderna de una universidad. El ambiente es sobrio, con una pequeña audiencia de estudiantes y profesores que prestan atención mientras Yuval Noah Harari conversa con el Presentadora. Un proyector detrás de ellos muestra imágenes relacionadas con la inteligencia artificial, estableciendo el tono de la conversación sobre tecnología y sus implicaciones futuras."
         },
         {

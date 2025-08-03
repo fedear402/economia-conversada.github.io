@@ -5,8 +5,6 @@ from pathlib import Path
 
 
 def clean_files(root_path: str, pattern = "main"):
-    """
-    """
     for dirpath, _, filenames in os.walk(root_path):
         counterparts = {f for f in filenames if f.endswith(".mp3") and f"{pattern}_1" in f}
 
