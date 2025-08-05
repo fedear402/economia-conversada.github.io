@@ -100,6 +100,7 @@ class ChapterViewer {
             this.completedFiles = {};
             this.fileComments = {};
             this.notCompletedFiles = {};
+            this.confirmedFiles = {};
             console.log('ChapterViewer constructor completed, starting init...');
             this.init().catch(error => {
                 console.error('Init failed:', error);
@@ -133,6 +134,7 @@ class ChapterViewer {
                 if (!this.completedFiles) this.completedFiles = {};
                 if (!this.fileComments) this.fileComments = {};
                 if (!this.notCompletedFiles) this.notCompletedFiles = {};
+                if (!this.confirmedFiles) this.confirmedFiles = {};
             }
             console.log('Shared data loaded');
             
@@ -617,6 +619,7 @@ class ChapterViewer {
                 // Check if file is completed and set appropriate colors
                 const isCompleted = this.isFileCompleted(audioFile.path);
                 const isNotCompleted = this.isFileNotCompleted && this.isFileNotCompleted(audioFile.path);
+                const isConfirmed = this.isFileConfirmed(audioFile.path);
                 
                 if (isCompleted) {
                     audioLabel.style.color = '#00C851';
@@ -650,6 +653,14 @@ class ChapterViewer {
                 notOkLabel.style.borderRadius = '3px';
                 notOkLabel.style.transition = 'all 0.2s ease';
                 
+                const confirmarLabel = document.createElement('span');
+                confirmarLabel.textContent = 'CONFIRMAR';
+                confirmarLabel.style.fontSize = '12px';
+                confirmarLabel.style.cursor = 'pointer';
+                confirmarLabel.style.padding = '2px 4px';
+                confirmarLabel.style.borderRadius = '3px';
+                confirmarLabel.style.transition = 'all 0.2s ease';
+                
                 // Set initial styles based on current state
                 if (isCompleted) {
                     okLabel.style.backgroundColor = '#00C851';
@@ -668,6 +679,17 @@ class ChapterViewer {
                     okLabel.style.backgroundColor = 'transparent';
                     notOkLabel.style.color = '#666';
                     notOkLabel.style.backgroundColor = 'transparent';
+                }
+                
+                // Set initial styles for confirmar button
+                if (isConfirmed) {
+                    confirmarLabel.style.backgroundColor = '#333333';
+                    confirmarLabel.style.color = 'white';
+                    confirmarLabel.style.fontWeight = 'bold';
+                } else {
+                    confirmarLabel.style.backgroundColor = '#999999';
+                    confirmarLabel.style.color = 'white';
+                    confirmarLabel.style.fontWeight = 'normal';
                 }
                 
                 // Handle OK click
@@ -781,8 +803,34 @@ class ChapterViewer {
                     }
                 };
                 
+                // Handle CONFIRMAR click
+                confirmarLabel.onclick = async () => {
+                    const isCurrentlyConfirmed = this.isFileConfirmed(audioFile.path);
+                    
+                    if (isCurrentlyConfirmed) {
+                        // Deselect - mark as not confirmed
+                        await this.markFileAsConfirmed(audioFile.path, audioFile.name, false);
+                        
+                        // Reset to light gray
+                        confirmarLabel.style.backgroundColor = '#999999';
+                        confirmarLabel.style.fontWeight = 'normal';
+                    } else {
+                        // Select - mark as confirmed
+                        await this.markFileAsConfirmed(audioFile.path, audioFile.name, true);
+                        
+                        // Set to dark gray
+                        confirmarLabel.style.backgroundColor = '#333333';
+                        confirmarLabel.style.fontWeight = 'bold';
+                    }
+                    
+                    if (document.querySelector('.todo-content-view')) {
+                        this.updateTodoCompletionStyles();
+                    }
+                };
+                
                 completionContainer.appendChild(okLabel);
                 completionContainer.appendChild(notOkLabel);
+                completionContainer.appendChild(confirmarLabel);
                 
                 audioLabelContainer.appendChild(deleteBtn);
                 audioLabelContainer.appendChild(audioLabel);
@@ -1272,6 +1320,17 @@ class ChapterViewer {
         }
     }
 
+    async saveConfirmedFiles() {
+        try {
+            const success = await this.githubApi.updateFile('confirmed_files.json', this.confirmedFiles, 'Update confirmed files');
+            if (!success) {
+                console.error('Failed to save confirmed files to GitHub - data not shared!');
+            }
+        } catch (error) {
+            console.error('Could not save confirmed files to GitHub:', error);
+        }
+    }
+
     async addFileComment(filePath, fileName, comment) {
         if (!this.fileComments[filePath]) {
             this.fileComments[filePath] = [];
@@ -1532,6 +1591,23 @@ class ChapterViewer {
 
     isFileCompleted(filePath) {
         return this.completedFiles.hasOwnProperty(filePath);
+    }
+
+    async markFileAsConfirmed(filePath, fileName, isConfirmed) {
+        if (isConfirmed) {
+            this.confirmedFiles[filePath] = {
+                confirmed_at: new Date().toISOString(),
+                name: fileName
+            };
+        } else {
+            delete this.confirmedFiles[filePath];
+        }
+        await this.saveConfirmedFiles();
+        console.log(`Marked file as ${isConfirmed ? 'confirmed' : 'not confirmed'}: ${fileName}`);
+    }
+
+    isFileConfirmed(filePath) {
+        return this.confirmedFiles.hasOwnProperty(filePath);
     }
 
     async deleteAudioFile(chapter, section, fileName, fileElement) {
@@ -1867,7 +1943,7 @@ class ChapterViewer {
     async loadSharedData() {
         console.log('Loading shared data from GitHub Issues...');
         try {
-            const [deleted, completed, comments, notCompleted] = await Promise.all([
+            const [deleted, completed, comments, notCompleted, confirmed] = await Promise.all([
                 this.githubApi.getFileContent('deleted_files_history.json').catch(e => {
                     console.warn('Failed to load deleted files:', e);
                     return {};
@@ -1883,6 +1959,10 @@ class ChapterViewer {
                 this.githubApi.getFileContent('not_completed_files.json').catch(e => {
                     console.warn('Failed to load not completed files:', e);
                     return {};
+                }),
+                this.githubApi.getFileContent('confirmed_files.json').catch(e => {
+                    console.warn('Failed to load confirmed files:', e);
+                    return {};
                 })
             ]);
 
@@ -1890,12 +1970,14 @@ class ChapterViewer {
             this.completedFiles = completed || {};
             this.fileComments = comments || {};
             this.notCompletedFiles = notCompleted || {};
+            this.confirmedFiles = confirmed || {};
 
             console.log('Shared data loaded from GitHub Issues:', {
                 deletedCount: Object.keys(this.deletedFiles).length,
                 completedCount: Object.keys(this.completedFiles).length,
                 commentsCount: Object.keys(this.fileComments).length,
-                notCompletedCount: Object.keys(this.notCompletedFiles).length
+                notCompletedCount: Object.keys(this.notCompletedFiles).length,
+                confirmedCount: Object.keys(this.confirmedFiles).length
             });
         } catch (error) {
             console.warn('Error loading shared data from GitHub:', error);
@@ -1903,6 +1985,7 @@ class ChapterViewer {
             this.completedFiles = {};
             this.fileComments = {};
             this.notCompletedFiles = {};
+            this.confirmedFiles = {};
         }
     }
 
