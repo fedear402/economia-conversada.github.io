@@ -687,8 +687,8 @@ class ChapterViewer {
                     confirmarLabel.style.color = 'white';
                     confirmarLabel.style.fontWeight = 'bold';
                 } else {
-                    confirmarLabel.style.backgroundColor = '#999999';
-                    confirmarLabel.style.color = 'white';
+                    confirmarLabel.style.backgroundColor = 'transparent';
+                    confirmarLabel.style.color = '#666';
                     confirmarLabel.style.fontWeight = 'normal';
                 }
                 
@@ -811,8 +811,9 @@ class ChapterViewer {
                         // Deselect - mark as not confirmed
                         await this.markFileAsConfirmed(audioFile.path, audioFile.name, false);
                         
-                        // Reset to light gray
-                        confirmarLabel.style.backgroundColor = '#999999';
+                        // Reset to default transparent state like other buttons
+                        confirmarLabel.style.backgroundColor = 'transparent';
+                        confirmarLabel.style.color = '#666';
                         confirmarLabel.style.fontWeight = 'normal';
                     } else {
                         // Select - mark as confirmed
@@ -820,6 +821,7 @@ class ChapterViewer {
                         
                         // Set to dark gray
                         confirmarLabel.style.backgroundColor = '#333333';
+                        confirmarLabel.style.color = 'white';
                         confirmarLabel.style.fontWeight = 'bold';
                     }
                     
