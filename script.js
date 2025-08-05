@@ -672,20 +672,35 @@ class ChapterViewer {
                 
                 // Handle OK click
                 okLabel.onclick = async () => {
-                    await this.markFileAsCompleted(audioFile.path, audioFile.name, true);
-                    if (this.markFileAsNotCompleted) {
-                        await this.markFileAsNotCompleted(audioFile.path, audioFile.name, false);
-                    }
+                    const isCurrentlyCompleted = this.isFileCompleted(audioFile.path);
                     
-                    // Update visual feedback
-                    audioLabel.style.color = '#00C851';
-                    audioLabel.style.fontWeight = 'bold';
-                    okLabel.style.backgroundColor = '#00C851';
-                    okLabel.style.color = 'white';
-                    okLabel.style.fontWeight = 'bold';
-                    notOkLabel.style.backgroundColor = 'transparent';
-                    notOkLabel.style.color = '#666';
-                    notOkLabel.style.fontWeight = 'normal';
+                    if (isCurrentlyCompleted) {
+                        // Deselect - mark as not completed
+                        await this.markFileAsCompleted(audioFile.path, audioFile.name, false);
+                        
+                        // Reset visual feedback to default state
+                        audioLabel.style.color = '';
+                        audioLabel.style.fontWeight = '';
+                        okLabel.style.backgroundColor = 'transparent';
+                        okLabel.style.color = '#666';
+                        okLabel.style.fontWeight = 'normal';
+                    } else {
+                        // Select - mark as completed
+                        await this.markFileAsCompleted(audioFile.path, audioFile.name, true);
+                        if (this.markFileAsNotCompleted) {
+                            await this.markFileAsNotCompleted(audioFile.path, audioFile.name, false);
+                        }
+                        
+                        // Update visual feedback
+                        audioLabel.style.color = '#00C851';
+                        audioLabel.style.fontWeight = 'bold';
+                        okLabel.style.backgroundColor = '#00C851';
+                        okLabel.style.color = 'white';
+                        okLabel.style.fontWeight = 'bold';
+                        notOkLabel.style.backgroundColor = 'transparent';
+                        notOkLabel.style.color = '#666';
+                        notOkLabel.style.fontWeight = 'normal';
+                    }
                     
                     if (document.querySelector('.todo-content-view')) {
                         this.updateTodoCompletionStyles();
@@ -694,55 +709,76 @@ class ChapterViewer {
                 
                 // Handle NOT OK click
                 notOkLabel.onclick = () => {
-                    this.showCommentModal(audioFile.path, audioFile.name, async (comment) => {
-                        await this.markFileAsCompleted(audioFile.path, audioFile.name, false);
-                        if (!this.markFileAsNotCompleted) {
-                            // Initialize not completed functionality if it doesn't exist
-                            this.notCompletedFiles = this.notCompletedFiles || {};
-                            this.markFileAsNotCompleted = async (filePath, fileName, isNotCompleted) => {
-                                if (isNotCompleted) {
-                                    this.notCompletedFiles[filePath] = {
-                                        not_completed_at: new Date().toISOString(),
-                                        name: fileName
-                                    };
-                                } else {
-                                    delete this.notCompletedFiles[filePath];
-                                }
-                                try {
-                                    await this.saveNotCompletedFiles();
-                                } catch (error) {
-                                    console.warn('Could not save not completed files:', error);
-                                }
-                            };
-                            this.isFileNotCompleted = (filePath) => {
-                                return this.notCompletedFiles && this.notCompletedFiles.hasOwnProperty(filePath);
-                            };
-                            // Not completed files are loaded in loadSharedData()
-                        }
-                        await this.markFileAsNotCompleted(audioFile.path, audioFile.name, true);
-                        
-                        // Add comment if provided
-                        if (comment && comment.trim()) {
-                            await this.addFileComment(audioFile.path, audioFile.name, comment.trim());
+                    const isCurrentlyNotCompleted = this.isFileNotCompleted && this.isFileNotCompleted(audioFile.path);
+                    
+                    if (isCurrentlyNotCompleted) {
+                        // Deselect - remove from not completed
+                        if (this.markFileAsNotCompleted) {
+                            this.markFileAsNotCompleted(audioFile.path, audioFile.name, false);
                         }
                         
-                        // Update visual feedback
-                        audioLabel.style.color = '#CC0000';
-                        audioLabel.style.fontWeight = 'bold';
-                        notOkLabel.style.backgroundColor = '#CC0000';
-                        notOkLabel.style.color = 'white';
-                        notOkLabel.style.fontWeight = 'bold';
-                        okLabel.style.backgroundColor = 'transparent';
-                        okLabel.style.color = '#666';
-                        okLabel.style.fontWeight = 'normal';
-                        
-                        // Update comments display if it exists
-                        this.updateCommentsDisplay(audioFile.path, audioPlayerContainer);
+                        // Reset visual feedback to default state
+                        audioLabel.style.color = '';
+                        audioLabel.style.fontWeight = '';
+                        notOkLabel.style.backgroundColor = 'transparent';
+                        notOkLabel.style.color = '#666';
+                        notOkLabel.style.fontWeight = 'normal';
                         
                         if (document.querySelector('.todo-content-view')) {
                             this.updateTodoCompletionStyles();
                         }
-                    });
+                    } else {
+                        // Select - show comment modal and mark as not completed
+                        this.showCommentModal(audioFile.path, audioFile.name, async (comment) => {
+                            await this.markFileAsCompleted(audioFile.path, audioFile.name, false);
+                            if (!this.markFileAsNotCompleted) {
+                                // Initialize not completed functionality if it doesn't exist
+                                this.notCompletedFiles = this.notCompletedFiles || {};
+                                this.markFileAsNotCompleted = async (filePath, fileName, isNotCompleted) => {
+                                    if (isNotCompleted) {
+                                        this.notCompletedFiles[filePath] = {
+                                            not_completed_at: new Date().toISOString(),
+                                            name: fileName
+                                        };
+                                    } else {
+                                        delete this.notCompletedFiles[filePath];
+                                    }
+                                    try {
+                                        await this.saveNotCompletedFiles();
+                                    } catch (error) {
+                                        console.warn('Could not save not completed files:', error);
+                                    }
+                                };
+                                this.isFileNotCompleted = (filePath) => {
+                                    return this.notCompletedFiles && this.notCompletedFiles.hasOwnProperty(filePath);
+                                };
+                                // Not completed files are loaded in loadSharedData()
+                            }
+                            await this.markFileAsNotCompleted(audioFile.path, audioFile.name, true);
+                            
+                            // Add comment if provided
+                            if (comment && comment.trim()) {
+                                await this.addFileComment(audioFile.path, audioFile.name, comment.trim());
+                            }
+                            
+                            // Update visual feedback
+                            audioLabel.style.color = '#CC0000';
+                            audioLabel.style.fontWeight = 'bold';
+                            notOkLabel.style.backgroundColor = '#CC0000';
+                            notOkLabel.style.color = 'white';
+                            notOkLabel.style.fontWeight = 'bold';
+                            okLabel.style.backgroundColor = 'transparent';
+                            okLabel.style.color = '#666';
+                            okLabel.style.fontWeight = 'normal';
+                            
+                            // Update comments display if it exists
+                            this.updateCommentsDisplay(audioFile.path, audioPlayerContainer);
+                            
+                            if (document.querySelector('.todo-content-view')) {
+                                this.updateTodoCompletionStyles();
+                            }
+                        });
+                    }
                 };
                 
                 completionContainer.appendChild(okLabel);
