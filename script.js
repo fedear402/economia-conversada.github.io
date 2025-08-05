@@ -101,6 +101,7 @@ class ChapterViewer {
             this.fileComments = {};
             this.notCompletedFiles = {};
             this.confirmedFiles = {};
+            this.todoV2Status = {}; // Independent tracking for Todo V2
             console.log('ChapterViewer constructor completed, starting init...');
             this.init().catch(error => {
                 console.error('Init failed:', error);
@@ -135,6 +136,7 @@ class ChapterViewer {
                 if (!this.fileComments) this.fileComments = {};
                 if (!this.notCompletedFiles) this.notCompletedFiles = {};
                 if (!this.confirmedFiles) this.confirmedFiles = {};
+                if (!this.todoV2Status) this.todoV2Status = {};
             }
             console.log('Shared data loaded');
             
@@ -330,6 +332,22 @@ class ChapterViewer {
         
         todoLi.appendChild(todoLink);
         ul.appendChild(todoLi);
+        
+        // Add To-Do V2 item
+        const todoV2Li = document.createElement('li');
+        todoV2Li.className = 'chapter-item';
+        
+        const todoV2Link = document.createElement('a');
+        todoV2Link.href = '#';
+        todoV2Link.textContent = 'To-Do (V2)';
+        todoV2Link.className = 'chapter-link';
+        todoV2Link.onclick = (e) => {
+            e.preventDefault();
+            this.loadTodoV2View();
+        };
+        
+        todoV2Li.appendChild(todoV2Link);
+        ul.appendChild(todoV2Li);
         
         // Add Deleted Files item
         const deletedCount = Object.keys(this.deletedFiles).length;
@@ -1886,6 +1904,304 @@ class ChapterViewer {
         `;
     }
 
+    // To-Do V2 functionality
+    async loadTodoV2View() {
+        try {
+            // Update active nav item
+            document.querySelectorAll('.sidebar nav a').forEach(a => a.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            await this.renderTodoV2Content();
+            this.currentChapter = null;
+            this.currentSection = null;
+        } catch (error) {
+            console.error('Error loading To-Do V2 view:', error);
+            this.renderTodoV2Error();
+        }
+    }
+
+    async renderTodoV2Content() {
+        const content = document.getElementById('chapter-content');
+        const contentContainer = content.parentElement;
+        
+        // Add class to make content wider
+        contentContainer.classList.add('todo-view');
+        
+        const todoV2View = document.createElement('div');
+        todoV2View.className = 'todo-v2-content-view';
+        
+        const title = document.createElement('h1');
+        title.className = 'todo-v2-title-main';
+        title.textContent = 'To-Do (V2): Estado por Estructura';
+        todoV2View.appendChild(title);
+        
+        const description = document.createElement('div');
+        description.className = 'todo-v2-description';
+        description.innerHTML = `
+            <p>Esta vista muestra el estado de progreso organizado por la estructura del libro. 
+            Cada elemento (libro, capítulo, sección) tiene sus propios controles de estado independientes.</p>
+            <p><strong>Click en los nombres</strong> para navegar a esa sección del libro.</p>
+        `;
+        todoV2View.appendChild(description);
+        
+        // Create the tree structure
+        const treeContainer = document.createElement('div');
+        treeContainer.className = 'todo-v2-tree';
+        
+        this.renderTodoV2Tree(treeContainer);
+        
+        todoV2View.appendChild(treeContainer);
+        
+        content.innerHTML = '';
+        content.appendChild(todoV2View);
+        
+        // Reset padding for todo v2 view (no fixed header)
+        content.style.paddingTop = '20px';
+    }
+
+    renderTodoV2Tree(container) {
+        if (!this.bookStructure || !this.bookStructure.chapters) {
+            container.innerHTML = '<p>No se pudo cargar la estructura del libro</p>';
+            return;
+        }
+
+        // Book level
+        const bookItem = this.createTodoV2Item('book', this.bookStructure.title, 'book', null, null);
+        container.appendChild(bookItem);
+        
+        // Chapters level
+        const chaptersContainer = document.createElement('div');
+        chaptersContainer.className = 'todo-v2-level-1';
+        chaptersContainer.style.marginLeft = '20px';
+        
+        this.bookStructure.chapters.forEach(chapter => {
+            const chapterItem = this.createTodoV2Item('chapter', chapter.title, chapter.id, chapter, null);
+            chaptersContainer.appendChild(chapterItem);
+            
+            // Sections level
+            if (chapter.sections && chapter.sections.length > 0) {
+                const sectionsContainer = document.createElement('div');
+                sectionsContainer.className = 'todo-v2-level-2';
+                sectionsContainer.style.marginLeft = '20px';
+                
+                chapter.sections.forEach(section => {
+                    const sectionItem = this.createTodoV2Item('section', section.title, `${chapter.id}-${section.id}`, chapter, section);
+                    sectionsContainer.appendChild(sectionItem);
+                });
+                
+                chaptersContainer.appendChild(sectionsContainer);
+            }
+        });
+        
+        container.appendChild(chaptersContainer);
+    }
+
+    createTodoV2Item(type, title, id, chapter, section) {
+        const itemContainer = document.createElement('div');
+        itemContainer.className = `todo-v2-item todo-v2-item-${type}`;
+        itemContainer.style.display = 'flex';
+        itemContainer.style.alignItems = 'center';
+        itemContainer.style.marginBottom = '8px';
+        itemContainer.style.padding = '4px 0';
+        
+        // Title (clickable)
+        const titleSpan = document.createElement('span');
+        titleSpan.className = 'todo-v2-title';
+        titleSpan.textContent = title;
+        titleSpan.style.cursor = 'pointer';
+        titleSpan.style.marginRight = '20px';
+        titleSpan.style.minWidth = '200px';
+        titleSpan.style.color = '#333';
+        titleSpan.style.textDecoration = 'underline';
+        
+        // Add click handler for navigation
+        titleSpan.onclick = () => {
+            if (type === 'section' && chapter && section) {
+                this.navigateToSectionFromTodoV2(chapter, section);
+            } else if (type === 'chapter' && chapter) {
+                this.navigateToChapterFromTodoV2(chapter);
+            }
+            // Book level doesn't navigate anywhere
+        };
+        
+        itemContainer.appendChild(titleSpan);
+        
+        // Status buttons container
+        const buttonsContainer = document.createElement('div');
+        buttonsContainer.className = 'todo-v2-buttons';
+        buttonsContainer.style.display = 'flex';
+        buttonsContainer.style.gap = '8px';
+        
+        // Create OK, NOT OK, CONFIRMAR buttons
+        const okBtn = this.createTodoV2Button('OK', id, 'ok');
+        const notOkBtn = this.createTodoV2Button('NOT OK', id, 'notok');
+        const confirmarBtn = this.createTodoV2Button('CONFIRMAR', id, 'confirmar');
+        
+        buttonsContainer.appendChild(okBtn);
+        buttonsContainer.appendChild(notOkBtn);
+        buttonsContainer.appendChild(confirmarBtn);
+        
+        itemContainer.appendChild(buttonsContainer);
+        
+        return itemContainer;
+    }
+
+    createTodoV2Button(text, itemId, buttonType) {
+        const button = document.createElement('span');
+        button.textContent = text;
+        button.className = `todo-v2-button todo-v2-button-${buttonType}`;
+        button.style.fontSize = '12px';
+        button.style.cursor = 'pointer';
+        button.style.padding = '2px 6px';
+        button.style.borderRadius = '3px';
+        button.style.transition = 'all 0.2s ease';
+        button.style.border = '1px solid #ddd';
+        
+        // Set initial state
+        const isActive = this.getTodoV2Status(itemId, buttonType);
+        this.setTodoV2ButtonStyle(button, buttonType, isActive);
+        
+        // Add click handler
+        button.onclick = async () => {
+            const currentState = this.getTodoV2Status(itemId, buttonType);
+            const newState = !currentState;
+            
+            // Update state
+            await this.setTodoV2Status(itemId, buttonType, newState);
+            
+            // Update visual style
+            this.setTodoV2ButtonStyle(button, buttonType, newState);
+        };
+        
+        return button;
+    }
+
+    setTodoV2ButtonStyle(button, buttonType, isActive) {
+        if (isActive) {
+            switch (buttonType) {
+                case 'ok':
+                    button.style.backgroundColor = '#00C851';
+                    button.style.color = 'white';
+                    button.style.fontWeight = 'bold';
+                    button.style.borderColor = '#00C851';
+                    break;
+                case 'notok':
+                    button.style.backgroundColor = '#CC0000';
+                    button.style.color = 'white';
+                    button.style.fontWeight = 'bold';
+                    button.style.borderColor = '#CC0000';
+                    break;
+                case 'confirmar':
+                    button.style.backgroundColor = '#333333';
+                    button.style.color = 'white';
+                    button.style.fontWeight = 'bold';
+                    button.style.borderColor = '#333333';
+                    break;
+            }
+        } else {
+            // Default/inactive state
+            button.style.backgroundColor = 'transparent';
+            button.style.color = '#666';
+            button.style.fontWeight = 'normal';
+            button.style.borderColor = '#ddd';
+        }
+    }
+
+    getTodoV2Status(itemId, buttonType) {
+        if (!this.todoV2Status[itemId]) {
+            return false;
+        }
+        return this.todoV2Status[itemId][buttonType] || false;
+    }
+
+    async setTodoV2Status(itemId, buttonType, isActive) {
+        if (!this.todoV2Status[itemId]) {
+            this.todoV2Status[itemId] = {};
+        }
+        
+        if (isActive) {
+            this.todoV2Status[itemId][buttonType] = true;
+        } else {
+            delete this.todoV2Status[itemId][buttonType];
+            
+            // Clean up empty objects
+            if (Object.keys(this.todoV2Status[itemId]).length === 0) {
+                delete this.todoV2Status[itemId];
+            }
+        }
+        
+        // Save to storage
+        await this.saveTodoV2Status();
+    }
+
+    async saveTodoV2Status() {
+        try {
+            const success = await this.githubApi.updateFile('todo_v2_status.json', this.todoV2Status, 'Update Todo V2 status');
+            if (!success) {
+                console.error('Failed to save Todo V2 status to GitHub - data not shared!');
+            }
+        } catch (error) {
+            console.error('Could not save Todo V2 status to GitHub:', error);
+        }
+    }
+
+    navigateToSectionFromTodoV2(chapter, section) {
+        console.log(`Navigating from To-Do V2 to ${chapter.id}-${section.id}: ${section.title}`);
+        
+        // Update active nav item - remove active from To-Do V2 and add to the section
+        document.querySelectorAll('.sidebar nav a').forEach(a => a.classList.remove('active'));
+        
+        // Find and activate the corresponding section link in the sidebar
+        const sectionLinks = document.querySelectorAll('.section-link');
+        sectionLinks.forEach(link => {
+            if (link.textContent.trim() === section.title) {
+                link.classList.add('active');
+                // Also expand the chapter if it's collapsed
+                const chapterItem = link.closest('.chapter-item');
+                const sectionsUl = chapterItem.querySelector('.sections-list');
+                const chapterLink = chapterItem.querySelector('.chapter-link');
+                if (sectionsUl) {
+                    sectionsUl.style.display = 'block';
+                    chapterLink.classList.add('expanded');
+                }
+            }
+        });
+        
+        // Load the section content
+        this.loadSection(chapter, section);
+    }
+
+    navigateToChapterFromTodoV2(chapter) {
+        console.log(`Navigating from To-Do V2 to chapter ${chapter.id}: ${chapter.title}`);
+        
+        // Update active nav item - remove active from To-Do V2 and add to the chapter
+        document.querySelectorAll('.sidebar nav a').forEach(a => a.classList.remove('active'));
+        
+        // Find and activate the corresponding chapter link in the sidebar
+        const chapterLinks = document.querySelectorAll('.chapter-link');
+        chapterLinks.forEach(link => {
+            if (link.textContent.trim() === chapter.title) {
+                link.classList.add('active');
+            }
+        });
+        
+        // Load the chapter content
+        this.loadChapter(chapter);
+    }
+
+    renderTodoV2Error() {
+        const content = document.getElementById('chapter-content');
+        content.innerHTML = `
+            <div class="todo-v2-content-view">
+                <h1 class="todo-v2-title-main">To-Do V2: Error</h1>
+                <div class="todo-v2-description">
+                    <p><strong>Error:</strong> No se pudo cargar la vista To-Do V2.</p>
+                    <p>Por favor, asegúrate de que la estructura del libro esté cargada correctamente.</p>
+                </div>
+            </div>
+        `;
+    }
+
     async loadAllAudioManifests() {
         console.log('Loading all audio manifests...');
         
@@ -1945,7 +2261,7 @@ class ChapterViewer {
     async loadSharedData() {
         console.log('Loading shared data from GitHub Issues...');
         try {
-            const [deleted, completed, comments, notCompleted, confirmed] = await Promise.all([
+            const [deleted, completed, comments, notCompleted, confirmed, todoV2] = await Promise.all([
                 this.githubApi.getFileContent('deleted_files_history.json').catch(e => {
                     console.warn('Failed to load deleted files:', e);
                     return {};
@@ -1965,6 +2281,10 @@ class ChapterViewer {
                 this.githubApi.getFileContent('confirmed_files.json').catch(e => {
                     console.warn('Failed to load confirmed files:', e);
                     return {};
+                }),
+                this.githubApi.getFileContent('todo_v2_status.json').catch(e => {
+                    console.warn('Failed to load Todo V2 status:', e);
+                    return {};
                 })
             ]);
 
@@ -1973,13 +2293,15 @@ class ChapterViewer {
             this.fileComments = comments || {};
             this.notCompletedFiles = notCompleted || {};
             this.confirmedFiles = confirmed || {};
+            this.todoV2Status = todoV2 || {};
 
             console.log('Shared data loaded from GitHub Issues:', {
                 deletedCount: Object.keys(this.deletedFiles).length,
                 completedCount: Object.keys(this.completedFiles).length,
                 commentsCount: Object.keys(this.fileComments).length,
                 notCompletedCount: Object.keys(this.notCompletedFiles).length,
-                confirmedCount: Object.keys(this.confirmedFiles).length
+                confirmedCount: Object.keys(this.confirmedFiles).length,
+                todoV2Count: Object.keys(this.todoV2Status).length
             });
         } catch (error) {
             console.warn('Error loading shared data from GitHub:', error);
@@ -1988,6 +2310,7 @@ class ChapterViewer {
             this.fileComments = {};
             this.notCompletedFiles = {};
             this.confirmedFiles = {};
+            this.todoV2Status = {};
         }
     }
 
