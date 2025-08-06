@@ -1549,6 +1549,14 @@ class ChapterViewer {
             return;
         }
 
+        // If there's only one property available, assign it directly without showing modal
+        if (availableProperties.length === 1) {
+            const property = availableProperties[0];
+            this.assignAudioToProperty(chapterId, sectionId, property, audioFile.name);
+            console.log(`Auto-assigned ${audioFile.name} to ${property} (only option available)`);
+            return;
+        }
+
         // Create modal overlay
         const modalOverlay = document.createElement('div');
         modalOverlay.style.position = 'fixed';
