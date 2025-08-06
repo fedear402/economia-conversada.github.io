@@ -595,13 +595,13 @@ class ChapterViewer {
                 existingProperties.remove();
             }
             
-            const propertiesDisplay = this.createPropertiesDisplay(type, parentChapter);
+            const propertiesDisplay = this.createPropertiesDisplay(type, parentChapter, item);
             if (propertiesDisplay) {
                 header.appendChild(propertiesDisplay);
             } else {
                 // If properties display is null (likely due to missing text manifest data),
                 // create a placeholder and try to populate it after a short delay
-                this.schedulePropertiesDisplayUpdate(header, type, parentChapter);
+                this.schedulePropertiesDisplayUpdate(header, type, parentChapter, item);
             }
         }
         
@@ -1781,7 +1781,7 @@ class ChapterViewer {
         this.refreshIndiceView();
     }
 
-    schedulePropertiesDisplayUpdate(header, type, parentChapter) {
+    schedulePropertiesDisplayUpdate(header, type, parentChapter, item = null) {
         // Try to add properties display after text manifests are loaded
         setTimeout(() => {
             // Clear any existing properties display first to prevent stale data
@@ -1790,7 +1790,7 @@ class ChapterViewer {
                 existingProperties.remove();
             }
             
-            const propertiesDisplay = this.createPropertiesDisplay(type, parentChapter);
+            const propertiesDisplay = this.createPropertiesDisplay(type, parentChapter, item);
             if (propertiesDisplay) {
                 // Insert the properties display right after the description (if exists) or title
                 const description = header.querySelector('.section-description, .chapter-description');
@@ -1808,7 +1808,7 @@ class ChapterViewer {
                         existingDelayedProperties.remove();
                     }
                     
-                    const delayedPropertiesDisplay = this.createPropertiesDisplay(type, parentChapter);
+                    const delayedPropertiesDisplay = this.createPropertiesDisplay(type, parentChapter, item);
                     if (delayedPropertiesDisplay) {
                         // Insert the properties display right after the description (if exists) or title
                         const description = header.querySelector('.section-description, .chapter-description');
@@ -1823,17 +1823,20 @@ class ChapterViewer {
         }, 100);
     }
 
-    createPropertiesDisplay(type, parentChapter) {
+    createPropertiesDisplay(type, parentChapter, item = null) {
         // Determine chapter and section IDs
         let chapterId, sectionId;
         
-        if (type === 'section' && parentChapter && this.currentSection) {
+        if (type === 'section' && parentChapter && item) {
+            // Use the item directly instead of relying on this.currentSection which might be stale
             chapterId = parentChapter.id;
-            sectionId = this.currentSection.id;
-        } else if (type === 'chapter' && this.currentChapter) {
-            chapterId = this.currentChapter.id;
+            sectionId = item.id;
+        } else if (type === 'chapter' && item) {
+            // Use the item directly instead of relying on this.currentChapter which might be stale
+            chapterId = item.id;
             sectionId = null;
         } else {
+            // If no item provided, clear any existing properties display and return null
             return null;
         }
 
