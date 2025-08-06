@@ -3009,78 +3009,154 @@ class ChapterViewer {
 
     async loadAllAudioManifests() {
         console.log('Loading all audio manifests...');
+        const startTime = performance.now();
         
         if (!this.bookStructure || !this.bookStructure.chapters) {
             console.warn('Book structure not available for loading audio manifests');
             return;
         }
 
-        // Load audio manifests for all chapters and sections
+        // Build list of all paths to load in parallel
+        const loadTasks = [];
+        
         for (const chapter of this.bookStructure.chapters) {
-            // Load chapter-level audio manifest
+            // Add chapter-level manifest task
             const chapterPath = `book1/${chapter.id}/`;
-            try {
-                const chapterAudioFiles = await this.findAllAudioFiles(chapterPath);
-                this.audioManifestData[`${chapter.id}`] = chapterAudioFiles.map(af => af.name);
-            } catch (error) {
-                console.warn(`Could not load audio manifest for chapter ${chapter.id}:`, error);
-                this.audioManifestData[`${chapter.id}`] = [];
-            }
+            const chapterKey = `${chapter.id}`;
+            loadTasks.push({
+                key: chapterKey,
+                path: chapterPath,
+                type: 'chapter',
+                chapterId: chapter.id
+            });
 
-            // Load section-level audio manifests
+            // Add section-level manifest tasks
             if (chapter.sections) {
                 for (const section of chapter.sections) {
                     const sectionPath = `book1/${chapter.id}/${section.id}/`;
-                    try {
-                        const sectionAudioFiles = await this.findAllAudioFiles(sectionPath);
-                        this.audioManifestData[`${chapter.id}-${section.id}`] = sectionAudioFiles.map(af => af.name);
-                    } catch (error) {
-                        console.warn(`Could not load audio manifest for section ${chapter.id}-${section.id}:`, error);
-                        this.audioManifestData[`${chapter.id}-${section.id}`] = [];
-                    }
+                    const sectionKey = `${chapter.id}-${section.id}`;
+                    loadTasks.push({
+                        key: sectionKey,
+                        path: sectionPath,
+                        type: 'section',
+                        chapterId: chapter.id,
+                        sectionId: section.id
+                    });
                 }
             }
         }
 
-        console.log('Audio manifest data loaded:', this.audioManifestData);
+        console.log(`Loading ${loadTasks.length} audio manifests in parallel...`);
+
+        // Execute all loads in parallel
+        const loadPromises = loadTasks.map(async (task) => {
+            try {
+                const audioFiles = await this.findAllAudioFiles(task.path);
+                return {
+                    key: task.key,
+                    data: audioFiles.map(af => af.name),
+                    success: true,
+                    task
+                };
+            } catch (error) {
+                console.warn(`Could not load audio manifest for ${task.key}:`, error);
+                return {
+                    key: task.key,
+                    data: [],
+                    success: false,
+                    task,
+                    error
+                };
+            }
+        });
+
+        // Wait for all to complete
+        const results = await Promise.all(loadPromises);
+        
+        // Process results
+        results.forEach(result => {
+            this.audioManifestData[result.key] = result.data;
+        });
+
+        const endTime = performance.now();
+        const totalTime = Math.round(endTime - startTime);
+        console.log(`Audio manifest data loaded in ${totalTime}ms:`, this.audioManifestData);
     }
 
     async loadAllTextManifests() {
         console.log('Loading all text manifests...');
+        const startTime = performance.now();
         
         if (!this.bookStructure || !this.bookStructure.chapters) {
             console.warn('Book structure not available for loading text manifests');
             return;
         }
 
-        // Load text manifests for all chapters and sections
+        // Build list of all paths to load in parallel
+        const loadTasks = [];
+        
         for (const chapter of this.bookStructure.chapters) {
-            // Load chapter-level text manifest
+            // Add chapter-level manifest task
             const chapterPath = `book1/${chapter.id}/`;
-            try {
-                const chapterTextFiles = await this.findAllTextFiles(chapterPath);
-                this.textManifestData[`${chapter.id}`] = chapterTextFiles.map(tf => tf.name);
-            } catch (error) {
-                console.warn(`Could not load text manifest for chapter ${chapter.id}:`, error);
-                this.textManifestData[`${chapter.id}`] = [];
-            }
+            const chapterKey = `${chapter.id}`;
+            loadTasks.push({
+                key: chapterKey,
+                path: chapterPath,
+                type: 'chapter',
+                chapterId: chapter.id
+            });
 
-            // Load section-level text manifests
+            // Add section-level manifest tasks
             if (chapter.sections) {
                 for (const section of chapter.sections) {
                     const sectionPath = `book1/${chapter.id}/${section.id}/`;
-                    try {
-                        const sectionTextFiles = await this.findAllTextFiles(sectionPath);
-                        this.textManifestData[`${chapter.id}-${section.id}`] = sectionTextFiles.map(tf => tf.name);
-                    } catch (error) {
-                        console.warn(`Could not load text manifest for section ${chapter.id}-${section.id}:`, error);
-                        this.textManifestData[`${chapter.id}-${section.id}`] = [];
-                    }
+                    const sectionKey = `${chapter.id}-${section.id}`;
+                    loadTasks.push({
+                        key: sectionKey,
+                        path: sectionPath,
+                        type: 'section',
+                        chapterId: chapter.id,
+                        sectionId: section.id
+                    });
                 }
             }
         }
 
-        console.log('Text manifest data loaded:', this.textManifestData);
+        console.log(`Loading ${loadTasks.length} text manifests in parallel...`);
+
+        // Execute all loads in parallel
+        const loadPromises = loadTasks.map(async (task) => {
+            try {
+                const textFiles = await this.findAllTextFiles(task.path);
+                return {
+                    key: task.key,
+                    data: textFiles.map(tf => tf.name),
+                    success: true,
+                    task
+                };
+            } catch (error) {
+                console.warn(`Could not load text manifest for ${task.key}:`, error);
+                return {
+                    key: task.key,
+                    data: [],
+                    success: false,
+                    task,
+                    error
+                };
+            }
+        });
+
+        // Wait for all to complete
+        const results = await Promise.all(loadPromises);
+        
+        // Process results
+        results.forEach(result => {
+            this.textManifestData[result.key] = result.data;
+        });
+
+        const endTime = performance.now();
+        const totalTime = Math.round(endTime - startTime);
+        console.log(`Text manifest data loaded in ${totalTime}ms:`, this.textManifestData);
     }
 
     async findAllTextFiles(folderPath) {
