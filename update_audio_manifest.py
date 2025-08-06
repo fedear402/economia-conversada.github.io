@@ -24,6 +24,9 @@ from typing import List, Set
 # Supported audio file extensions
 AUDIO_EXTENSIONS = {'.mp3', '.wav', '.m4a', '.ogg', '.flac'}
 
+# Text file extension  
+TEXT_EXTENSION = '.txt'
+
 def find_audio_files(directory: Path, delete_wav: bool = False) -> List[str]:
     """Find all audio files in a directory and return their filenames.
     
@@ -54,6 +57,29 @@ def find_audio_files(directory: Path, delete_wav: bool = False) -> List[str]:
     
     # Sort for consistent ordering
     return sorted(audio_files)
+
+def find_text_files(directory: Path) -> List[str]:
+    """Find all text files in a directory and return their filenames (excluding title.txt).
+    
+    Args:
+        directory: Path to the directory to scan
+    
+    Returns:
+        List of text filenames (excluding title.txt)
+    """
+    text_files = []
+    
+    if not directory.exists():
+        return text_files
+    
+    for file in directory.iterdir():
+        if file.is_file() and file.suffix.lower() == TEXT_EXTENSION:
+            # Exclude title.txt as requested
+            if file.name.lower() != 'title.txt':
+                text_files.append(file.name)
+    
+    # Sort for consistent ordering
+    return sorted(text_files)
 
 def update_audio_manifest(directory: Path, dry_run: bool = False, delete_wav: bool = False) -> bool:
     """Update the audio_manifest.json file in the given directory."""
@@ -92,11 +118,63 @@ def update_audio_manifest(directory: Path, dry_run: bool = False, delete_wav: bo
         print(f"Error: Could not write to {manifest_path}: {e}")
         return False
 
+def update_text_manifest(directory: Path, dry_run: bool = False) -> bool:
+    """Update the text_manifest.json file in the given directory."""
+    manifest_path = directory / 'text_manifest.json'
+    text_files = find_text_files(directory)
+    
+    # Skip if no text files found (excluding title.txt)
+    if not text_files:
+        # Remove manifest if it exists but no text files found
+        if manifest_path.exists() and not dry_run:
+            try:
+                manifest_path.unlink()
+                print(f"Removed empty text manifest: {manifest_path}")
+                return True
+            except OSError as e:
+                print(f"Error: Could not remove {manifest_path}: {e}")
+                return False
+        return False
+    
+    # Read existing manifest if it exists
+    existing_manifest = []
+    if manifest_path.exists():
+        try:
+            with open(manifest_path, 'r', encoding='utf-8') as f:
+                existing_manifest = json.load(f)
+                if not isinstance(existing_manifest, list):
+                    existing_manifest = []
+        except (json.JSONDecodeError, IOError) as e:
+            print(f"Warning: Could not read existing text manifest in {directory}: {e}")
+            existing_manifest = []
+    
+    # Check if update is needed
+    if set(text_files) == set(existing_manifest):
+        return False  # No changes needed
+    
+    if dry_run:
+        print(f"Would update {manifest_path}:")
+        print(f"  Current: {existing_manifest}")
+        print(f"  New:     {text_files}")
+        return True
+    
+    # Write updated manifest
+    try:
+        with open(manifest_path, 'w', encoding='utf-8') as f:
+            json.dump(text_files, f, indent=0, ensure_ascii=False)
+        print(f"Updated {manifest_path}: {text_files}")
+        return True
+    except IOError as e:
+        print(f"Error: Could not write to {manifest_path}: {e}")
+        return False
+
 def scan_book_directory(book_path: Path, dry_run: bool = False, delete_wav: bool = False) -> dict:
-    """Scan the entire book directory and update all audio manifests."""
+    """Scan the entire book directory and update all audio and text manifests."""
     stats = {
-        'updated': 0,
-        'unchanged': 0,
+        'audio_updated': 0,
+        'audio_unchanged': 0,
+        'text_updated': 0,
+        'text_unchanged': 0,
         'errors': 0,
         'total_folders': 0
     }
@@ -120,13 +198,20 @@ def scan_book_directory(book_path: Path, dry_run: bool = False, delete_wav: bool
             
         print(f"\nProcessing chapter: {chapter_dir.name}")
         
-        # Update chapter-level audio manifest
+        # Update chapter-level audio and text manifests
         stats['total_folders'] += 1
         try:
+            # Update audio manifest
             if update_audio_manifest(chapter_dir, dry_run, delete_wav):
-                stats['updated'] += 1
+                stats['audio_updated'] += 1
             else:
-                stats['unchanged'] += 1
+                stats['audio_unchanged'] += 1
+                
+            # Update text manifest
+            if update_text_manifest(chapter_dir, dry_run):
+                stats['text_updated'] += 1
+            else:
+                stats['text_unchanged'] += 1
         except Exception as e:
             print(f"Error processing {chapter_dir}: {e}")
             stats['errors'] += 1
@@ -140,10 +225,17 @@ def scan_book_directory(book_path: Path, dry_run: bool = False, delete_wav: bool
             stats['total_folders'] += 1
             
             try:
+                # Update audio manifest
                 if update_audio_manifest(section_dir, dry_run, delete_wav):
-                    stats['updated'] += 1
+                    stats['audio_updated'] += 1
                 else:
-                    stats['unchanged'] += 1
+                    stats['audio_unchanged'] += 1
+                    
+                # Update text manifest
+                if update_text_manifest(section_dir, dry_run):
+                    stats['text_updated'] += 1
+                else:
+                    stats['text_unchanged'] += 1
             except Exception as e:
                 print(f"Error processing {section_dir}: {e}")
                 stats['errors'] += 1
@@ -155,10 +247,17 @@ def scan_book_directory(book_path: Path, dry_run: bool = False, delete_wav: bool
             stats['total_folders'] += 1
             
             try:
+                # Update audio manifest
                 if update_audio_manifest(special_dir, dry_run, delete_wav):
-                    stats['updated'] += 1
+                    stats['audio_updated'] += 1
                 else:
-                    stats['unchanged'] += 1
+                    stats['audio_unchanged'] += 1
+                    
+                # Update text manifest
+                if update_text_manifest(special_dir, dry_run):
+                    stats['text_updated'] += 1
+                else:
+                    stats['text_unchanged'] += 1
             except Exception as e:
                 print(f"Error processing {special_dir}: {e}")
                 stats['errors'] += 1
@@ -204,12 +303,15 @@ def main():
     print("SUMMARY")
     print("=" * 50)
     print(f"Total folders processed: {stats['total_folders']}")
-    print(f"Audio manifests updated: {stats['updated']}")
-    print(f"Audio manifests unchanged: {stats['unchanged']}")
+    print(f"Audio manifests updated: {stats['audio_updated']}")
+    print(f"Audio manifests unchanged: {stats['audio_unchanged']}")
+    print(f"Text manifests updated: {stats['text_updated']}")
+    print(f"Text manifests unchanged: {stats['text_unchanged']}")
     print(f"Errors encountered: {stats['errors']}")
     
-    if args.dry_run and stats['updated'] > 0:
-        print(f"\nRun without --dry-run to apply {stats['updated']} changes")
+    total_updates = stats['audio_updated'] + stats['text_updated']
+    if args.dry_run and total_updates > 0:
+        print(f"\nRun without --dry-run to apply {total_updates} changes")
     
     return 0 if stats['errors'] == 0 else 1
 

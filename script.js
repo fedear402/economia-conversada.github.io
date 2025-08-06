@@ -102,6 +102,8 @@ class ChapterViewer {
             this.notCompletedFiles = {};
             this.confirmedFiles = {};
             this.todoV2Status = {}; // Independent tracking for Todo V2
+            this.propertyAssignments = {}; // Audio file to property assignments
+            this.textManifestData = {}; // Cache for text manifest data
             console.log('ChapterViewer constructor completed, starting init...');
             this.init().catch(error => {
                 console.error('Init failed:', error);
@@ -137,6 +139,7 @@ class ChapterViewer {
                 if (!this.notCompletedFiles) this.notCompletedFiles = {};
                 if (!this.confirmedFiles) this.confirmedFiles = {};
                 if (!this.todoV2Status) this.todoV2Status = {};
+                if (!this.propertyAssignments) this.propertyAssignments = {};
             }
             console.log('Shared data loaded');
             
@@ -145,6 +148,9 @@ class ChapterViewer {
             
             await this.loadAllAudioManifests();
             console.log('Audio manifests loaded');
+            
+            await this.loadAllTextManifests();
+            console.log('Text manifests loaded');
             
             await this.loadCharacterData();
             console.log('Character data loaded');
@@ -580,6 +586,14 @@ class ChapterViewer {
             description.textContent = item.description;
             header.appendChild(description);
         }
+
+        // Add properties display for sections and chapters
+        if (type === 'section' || type === 'chapter') {
+            const propertiesDisplay = this.createPropertiesDisplay(type, parentChapter);
+            if (propertiesDisplay) {
+                header.appendChild(propertiesDisplay);
+            }
+        }
         
         // Check if audio files exist and add players
         if (item.audioFiles && item.audioFiles.length > 0) {
@@ -597,7 +611,39 @@ class ChapterViewer {
                 audioLabelContainer.style.marginBottom = '8px';
                 audioLabelContainer.style.gap = '12px';
                 
-                // Add delete button (far left)
+                // Add assign button (far left)
+                const assignBtn = document.createElement('button');
+                assignBtn.className = 'audio-assign-btn';
+                assignBtn.innerHTML = '↕';
+                assignBtn.title = `Asignar ${audioFile.name} a propiedad`;
+                assignBtn.style.backgroundColor = '#3498db';
+                assignBtn.style.color = 'white';
+                assignBtn.style.border = 'none';
+                assignBtn.style.borderRadius = '50%';
+                assignBtn.style.width = '24px';
+                assignBtn.style.height = '24px';
+                assignBtn.style.fontSize = '14px';
+                assignBtn.style.cursor = 'pointer';
+                assignBtn.style.display = 'flex';
+                assignBtn.style.alignItems = 'center';
+                assignBtn.style.justifyContent = 'center';
+                assignBtn.style.transition = 'all 0.2s ease';
+                assignBtn.style.flexShrink = '0';
+                assignBtn.style.marginRight = '4px';
+                assignBtn.onmouseover = () => {
+                    assignBtn.style.backgroundColor = '#2980b9';
+                    assignBtn.style.transform = 'scale(1.1)';
+                };
+                assignBtn.onmouseout = () => {
+                    assignBtn.style.backgroundColor = '#3498db';
+                    assignBtn.style.transform = 'scale(1)';
+                };
+                assignBtn.onclick = (e) => {
+                    e.preventDefault();
+                    this.showPropertyAssignmentModal(audioFile, type, parentChapter);
+                };
+
+                // Add delete button 
                 const deleteBtn = document.createElement('button');
                 deleteBtn.className = 'audio-delete-btn';
                 deleteBtn.innerHTML = '×';
@@ -742,9 +788,8 @@ class ChapterViewer {
                         notOkLabel.style.fontWeight = 'normal';
                     }
                     
-                    if (document.querySelector('.todo-content-view')) {
-                        this.updateTodoCompletionStyles();
-                    }
+                    // Synchronize with Indice view
+                    this.synchronizeWithIndice();
                 };
                 
                 // Handle NOT OK click
@@ -764,9 +809,8 @@ class ChapterViewer {
                         notOkLabel.style.color = '#666';
                         notOkLabel.style.fontWeight = 'normal';
                         
-                        if (document.querySelector('.todo-content-view')) {
-                            this.updateTodoCompletionStyles();
-                        }
+                        // Synchronize with Indice view
+                        this.synchronizeWithIndice();
                     } else {
                         // Select - show comment modal and mark as not completed
                         this.showCommentModal(audioFile.path, audioFile.name, async (comment) => {
@@ -814,9 +858,8 @@ class ChapterViewer {
                             // Update comments display if it exists
                             this.updateCommentsDisplay(audioFile.path, audioPlayerContainer);
                             
-                            if (document.querySelector('.todo-content-view')) {
-                                this.updateTodoCompletionStyles();
-                            }
+                            // Synchronize with Indice view
+                            this.synchronizeWithIndice();
                         });
                     }
                 };
@@ -843,15 +886,15 @@ class ChapterViewer {
                         confirmarLabel.style.fontWeight = 'bold';
                     }
                     
-                    if (document.querySelector('.todo-content-view')) {
-                        this.updateTodoCompletionStyles();
-                    }
+                    // Synchronize with Indice view
+                    this.synchronizeWithIndice();
                 };
                 
                 completionContainer.appendChild(okLabel);
                 completionContainer.appendChild(notOkLabel);
                 completionContainer.appendChild(confirmarLabel);
                 
+                audioLabelContainer.appendChild(assignBtn);
                 audioLabelContainer.appendChild(deleteBtn);
                 audioLabelContainer.appendChild(audioLabel);
                 audioLabelContainer.appendChild(completionContainer);
@@ -1479,6 +1522,386 @@ class ChapterViewer {
         textarea.focus();
     }
 
+    showPropertyAssignmentModal(audioFile, type, parentChapter) {
+        // Determine chapter and section IDs
+        let chapterId, sectionId;
+        
+        if (type === 'section' && parentChapter) {
+            chapterId = parentChapter.id;
+            sectionId = this.currentSection?.id;
+        } else if (type === 'chapter') {
+            chapterId = this.currentChapter?.id;
+            sectionId = null;
+        } else {
+            console.error('Could not determine chapter/section for assignment');
+            return;
+        }
+
+        // Get available properties for this chapter/section
+        const availableProperties = this.getAvailableProperties(chapterId, sectionId);
+        
+        if (availableProperties.length === 0) {
+            alert('No hay propiedades disponibles para este capítulo/sección.');
+            return;
+        }
+
+        // Create modal overlay
+        const modalOverlay = document.createElement('div');
+        modalOverlay.style.position = 'fixed';
+        modalOverlay.style.top = '0';
+        modalOverlay.style.left = '0';
+        modalOverlay.style.width = '100%';
+        modalOverlay.style.height = '100%';
+        modalOverlay.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+        modalOverlay.style.zIndex = '10000';
+        modalOverlay.style.display = 'flex';
+        modalOverlay.style.alignItems = 'center';
+        modalOverlay.style.justifyContent = 'center';
+        
+        // Create modal content
+        const modal = document.createElement('div');
+        modal.style.backgroundColor = 'white';
+        modal.style.padding = '30px';
+        modal.style.borderRadius = '8px';
+        modal.style.boxShadow = '0 4px 20px rgba(0, 0, 0, 0.3)';
+        modal.style.maxWidth = '500px';
+        modal.style.width = '90%';
+        modal.style.maxHeight = '80vh';
+        modal.style.overflow = 'auto';
+        
+        // Create modal title
+        const title = document.createElement('h3');
+        title.textContent = `Asignar "${audioFile.displayName}" a propiedad`;
+        title.style.marginBottom = '20px';
+        title.style.color = '#333';
+        
+        // Check if audio file is already assigned
+        const currentAssignment = this.getPropertyForAudioFile(audioFile.name);
+        
+        if (currentAssignment) {
+            const currentInfo = document.createElement('div');
+            currentInfo.style.backgroundColor = '#fff3cd';
+            currentInfo.style.padding = '10px';
+            currentInfo.style.borderRadius = '4px';
+            currentInfo.style.marginBottom = '15px';
+            currentInfo.style.fontSize = '14px';
+            currentInfo.innerHTML = `<strong>Asignación actual:</strong> ${currentAssignment}`;
+            modal.appendChild(title);
+            modal.appendChild(currentInfo);
+        } else {
+            modal.appendChild(title);
+        }
+        
+        // Create dropdown container
+        const dropdownContainer = document.createElement('div');
+        dropdownContainer.style.marginBottom = '20px';
+        
+        const dropdownLabel = document.createElement('label');
+        dropdownLabel.textContent = 'Seleccionar propiedad:';
+        dropdownLabel.style.display = 'block';
+        dropdownLabel.style.marginBottom = '8px';
+        dropdownLabel.style.fontWeight = '500';
+        
+        const dropdown = document.createElement('select');
+        dropdown.style.width = '100%';
+        dropdown.style.padding = '10px';
+        dropdown.style.border = '1px solid #ddd';
+        dropdown.style.borderRadius = '4px';
+        dropdown.style.fontSize = '14px';
+        dropdown.style.backgroundColor = 'white';
+        
+        // Add default option
+        const defaultOption = document.createElement('option');
+        defaultOption.value = '';
+        defaultOption.textContent = '-- Seleccionar propiedad --';
+        dropdown.appendChild(defaultOption);
+        
+        // Add property options
+        availableProperties.forEach(property => {
+            const option = document.createElement('option');
+            option.value = property;
+            option.textContent = property;
+            
+            // Check if this property already has an assignment
+            const existingAssignment = this.getAssignedAudioFile(chapterId, sectionId, property);
+            if (existingAssignment) {
+                option.textContent += ` (ya asignado a: ${existingAssignment})`;
+                option.style.color = '#666';
+            }
+            
+            dropdown.appendChild(option);
+        });
+        
+        dropdownContainer.appendChild(dropdownLabel);
+        dropdownContainer.appendChild(dropdown);
+        
+        // Create buttons container
+        const buttonsContainer = document.createElement('div');
+        buttonsContainer.style.display = 'flex';
+        buttonsContainer.style.gap = '10px';
+        buttonsContainer.style.justifyContent = 'flex-end';
+        
+        // Create assign button
+        const assignBtn = document.createElement('button');
+        assignBtn.textContent = 'Asignar';
+        assignBtn.style.backgroundColor = '#3498db';
+        assignBtn.style.color = 'white';
+        assignBtn.style.border = 'none';
+        assignBtn.style.padding = '10px 20px';
+        assignBtn.style.borderRadius = '4px';
+        assignBtn.style.cursor = 'pointer';
+        assignBtn.style.fontSize = '14px';
+        
+        // Create unassign button (if currently assigned)
+        let unassignBtn = null;
+        if (currentAssignment) {
+            unassignBtn = document.createElement('button');
+            unassignBtn.textContent = 'Desasignar actual';
+            unassignBtn.style.backgroundColor = '#e74c3c';
+            unassignBtn.style.color = 'white';
+            unassignBtn.style.border = 'none';
+            unassignBtn.style.padding = '10px 20px';
+            unassignBtn.style.borderRadius = '4px';
+            unassignBtn.style.cursor = 'pointer';
+            unassignBtn.style.fontSize = '14px';
+        }
+        
+        // Create cancel button
+        const cancelBtn = document.createElement('button');
+        cancelBtn.textContent = 'Cancelar';
+        cancelBtn.style.backgroundColor = '#666';
+        cancelBtn.style.color = 'white';
+        cancelBtn.style.border = 'none';
+        cancelBtn.style.padding = '10px 20px';
+        cancelBtn.style.borderRadius = '4px';
+        cancelBtn.style.cursor = 'pointer';
+        cancelBtn.style.fontSize = '14px';
+        
+        // Add event listeners
+        assignBtn.onclick = () => {
+            const selectedProperty = dropdown.value;
+            if (!selectedProperty) {
+                alert('Por favor selecciona una propiedad.');
+                return;
+            }
+            
+            // Confirm if overwriting existing assignment
+            const existingAssignment = this.getAssignedAudioFile(chapterId, sectionId, selectedProperty);
+            if (existingAssignment && existingAssignment !== audioFile.name) {
+                if (!confirm(`La propiedad "${selectedProperty}" ya está asignada a "${existingAssignment}". ¿Quieres reemplazarla?`)) {
+                    return;
+                }
+            }
+            
+            // Perform assignment
+            this.assignAudioToProperty(chapterId, sectionId, selectedProperty, audioFile.name);
+            document.body.removeChild(modalOverlay);
+            
+            // Refresh current view
+            this.refreshCurrentView();
+        };
+        
+        if (unassignBtn) {
+            unassignBtn.onclick = () => {
+                if (confirm(`¿Estás seguro de que quieres desasignar "${audioFile.name}" de la propiedad "${currentAssignment}"?`)) {
+                    this.unassignProperty(currentAssignment);
+                    document.body.removeChild(modalOverlay);
+                    
+                    // Refresh current view
+                    this.refreshCurrentView();
+                }
+            };
+        }
+        
+        cancelBtn.onclick = () => {
+            document.body.removeChild(modalOverlay);
+        };
+        
+        // Close on overlay click
+        modalOverlay.onclick = (e) => {
+            if (e.target === modalOverlay) {
+                document.body.removeChild(modalOverlay);
+            }
+        };
+        
+        // Close on escape key
+        const escapeHandler = (e) => {
+            if (e.key === 'Escape') {
+                document.body.removeChild(modalOverlay);
+                document.removeEventListener('keydown', escapeHandler);
+            }
+        };
+        document.addEventListener('keydown', escapeHandler);
+        
+        // Assemble modal
+        buttonsContainer.appendChild(cancelBtn);
+        if (unassignBtn) {
+            buttonsContainer.appendChild(unassignBtn);
+        }
+        buttonsContainer.appendChild(assignBtn);
+        modal.appendChild(dropdownContainer);
+        modal.appendChild(buttonsContainer);
+        modalOverlay.appendChild(modal);
+        
+        // Add to DOM and focus dropdown
+        document.body.appendChild(modalOverlay);
+        dropdown.focus();
+    }
+
+    refreshCurrentView() {
+        // Refresh the current section or chapter view
+        if (this.currentSection && this.currentChapter) {
+            this.loadSection(this.currentChapter, this.currentSection);
+        } else if (this.currentChapter) {
+            this.loadChapter(this.currentChapter);
+        }
+        
+        // Also refresh Indice if open
+        this.refreshIndiceView();
+    }
+
+    createPropertiesDisplay(type, parentChapter) {
+        // Determine chapter and section IDs
+        let chapterId, sectionId;
+        
+        if (type === 'section' && parentChapter && this.currentSection) {
+            chapterId = parentChapter.id;
+            sectionId = this.currentSection.id;
+        } else if (type === 'chapter' && this.currentChapter) {
+            chapterId = this.currentChapter.id;
+            sectionId = null;
+        } else {
+            return null;
+        }
+
+        // Get available properties
+        const availableProperties = this.getAvailableProperties(chapterId, sectionId);
+        
+        if (availableProperties.length === 0) {
+            return null;
+        }
+
+        // Create properties container
+        const propertiesContainer = document.createElement('div');
+        propertiesContainer.className = 'properties-display';
+        propertiesContainer.style.marginTop = '15px';
+        propertiesContainer.style.marginBottom = '15px';
+        propertiesContainer.style.padding = '12px';
+        propertiesContainer.style.backgroundColor = '#f8f9fa';
+        propertiesContainer.style.border = '1px solid #e9ecef';
+        propertiesContainer.style.borderRadius = '6px';
+        
+        // Properties title
+        const propertiesTitle = document.createElement('div');
+        propertiesTitle.textContent = 'Propiedades:';
+        propertiesTitle.style.fontWeight = 'bold';
+        propertiesTitle.style.fontSize = '14px';
+        propertiesTitle.style.marginBottom = '8px';
+        propertiesTitle.style.color = '#495057';
+        propertiesContainer.appendChild(propertiesTitle);
+
+        // Properties list
+        const propertiesList = document.createElement('div');
+        propertiesList.className = 'properties-list';
+        propertiesList.style.display = 'flex';
+        propertiesList.style.flexDirection = 'column';
+        propertiesList.style.gap = '6px';
+
+        availableProperties.forEach(property => {
+            const propertyItem = this.createPropertyDisplayItem(chapterId, sectionId, property);
+            propertiesList.appendChild(propertyItem);
+        });
+
+        propertiesContainer.appendChild(propertiesList);
+        return propertiesContainer;
+    }
+
+    createPropertyDisplayItem(chapterId, sectionId, property) {
+        const propertyItem = document.createElement('div');
+        propertyItem.className = 'property-display-item';
+        propertyItem.style.display = 'flex';
+        propertyItem.style.alignItems = 'center';
+        propertyItem.style.fontSize = '13px';
+        propertyItem.style.paddingLeft = '16px';
+
+        // Property name
+        const propertyName = document.createElement('span');
+        propertyName.textContent = property + ': ';
+        propertyName.style.fontWeight = '500';
+        propertyName.style.color = '#6c757d';
+        propertyName.style.minWidth = '100px';
+
+        // Assignment status
+        const assignedAudio = this.getAssignedAudioFile(chapterId, sectionId, property);
+        
+        if (assignedAudio) {
+            // Assigned - show filename with unassign button
+            const assignmentContainer = document.createElement('span');
+            assignmentContainer.style.display = 'flex';
+            assignmentContainer.style.alignItems = 'center';
+            assignmentContainer.style.gap = '8px';
+
+            const audioFileName = document.createElement('span');
+            audioFileName.textContent = assignedAudio;
+            audioFileName.style.color = '#28a745';
+            audioFileName.style.fontWeight = '500';
+            audioFileName.style.backgroundColor = '#d4edda';
+            audioFileName.style.padding = '2px 6px';
+            audioFileName.style.borderRadius = '3px';
+            audioFileName.style.fontSize = '12px';
+
+            const unassignBtn = document.createElement('button');
+            unassignBtn.textContent = '×';
+            unassignBtn.title = `Desasignar ${assignedAudio} de ${property}`;
+            unassignBtn.style.backgroundColor = '#dc3545';
+            unassignBtn.style.color = 'white';
+            unassignBtn.style.border = 'none';
+            unassignBtn.style.borderRadius = '50%';
+            unassignBtn.style.width = '20px';
+            unassignBtn.style.height = '20px';
+            unassignBtn.style.fontSize = '12px';
+            unassignBtn.style.cursor = 'pointer';
+            unassignBtn.style.display = 'flex';
+            unassignBtn.style.alignItems = 'center';
+            unassignBtn.style.justifyContent = 'center';
+            unassignBtn.style.transition = 'all 0.2s ease';
+
+            unassignBtn.onmouseover = () => {
+                unassignBtn.style.backgroundColor = '#c82333';
+                unassignBtn.style.transform = 'scale(1.1)';
+            };
+            unassignBtn.onmouseout = () => {
+                unassignBtn.style.backgroundColor = '#dc3545';
+                unassignBtn.style.transform = 'scale(1)';
+            };
+
+            unassignBtn.onclick = () => {
+                const propertyKey = this.getPropertyKey(chapterId, sectionId, property);
+                if (confirm(`¿Estás seguro de que quieres desasignar "${assignedAudio}" de la propiedad "${property}"?`)) {
+                    this.unassignProperty(propertyKey);
+                    this.refreshCurrentView();
+                }
+            };
+
+            assignmentContainer.appendChild(audioFileName);
+            assignmentContainer.appendChild(unassignBtn);
+            propertyItem.appendChild(propertyName);
+            propertyItem.appendChild(assignmentContainer);
+        } else {
+            // Not assigned
+            const noAssignmentText = document.createElement('span');
+            noAssignmentText.textContent = '[Sin asignación]';
+            noAssignmentText.style.color = '#6c757d';
+            noAssignmentText.style.fontStyle = 'italic';
+            noAssignmentText.style.fontSize = '12px';
+
+            propertyItem.appendChild(propertyName);
+            propertyItem.appendChild(noAssignmentText);
+        }
+
+        return propertyItem;
+    }
+
     addCommentsDisplay(filePath, containerElement) {
         const comments = this.getFileComments(filePath);
         if (comments.length === 0) return;
@@ -2036,54 +2459,291 @@ class ChapterViewer {
         
         itemContainer.appendChild(titleSpan);
         
-        // Status buttons container
-        const buttonsContainer = document.createElement('div');
-        buttonsContainer.className = 'todo-v2-buttons';
-        buttonsContainer.style.display = 'flex';
-        buttonsContainer.style.gap = '12px';
-        buttonsContainer.style.alignItems = 'center';
-        
-        if (type === 'section') {
-            // Check if this is a synopsis section (contains "sinopsis" in title, case insensitive)
-            const isSynopsis = section && section.title.toLowerCase().includes('sinopsis');
-            
-            if (isSynopsis) {
-                // Single set of buttons for synopsis sections (no prefix for basic buttons)
-                const buttonSet = this.createTodoV2ButtonSet(id, '');
-                buttonsContainer.appendChild(buttonSet);
-            } else {
-                // Two sets of buttons for non-synopsis sections
-                const buttonSet1 = this.createTodoV2ButtonSet(id, 'descripcion');
-                const buttonSet2 = this.createTodoV2ButtonSet(id, 'conversacion');
-                
-                // Add labels for the button sets
-                const label1 = document.createElement('span');
-                label1.textContent = 'Descripción de escena:';
-                label1.style.fontSize = '11px';
-                label1.style.color = '#666';
-                label1.style.fontWeight = '500';
-                
-                const label2 = document.createElement('span');
-                label2.textContent = 'Conversación:';
-                label2.style.fontSize = '11px';
-                label2.style.color = '#666';
-                label2.style.fontWeight = '500';
-                
-                buttonsContainer.appendChild(label1);
-                buttonsContainer.appendChild(buttonSet1);
-                buttonsContainer.appendChild(label2);
-                buttonsContainer.appendChild(buttonSet2);
-            }
-        } else if (type === 'chapter') {
-            // Single set of buttons for chapter level only
-            const buttonSet = this.createTodoV2ButtonSet(id, '');
-            buttonsContainer.appendChild(buttonSet);
+        // Properties container (replacing old button system)
+        if (type !== 'book') {
+            const propertiesContainer = this.createPropertiesContainer(type, chapter, section);
+            itemContainer.appendChild(propertiesContainer);
         }
-        // No buttons for book level
-        
-        itemContainer.appendChild(buttonsContainer);
         
         return itemContainer;
+    }
+
+    createPropertiesContainer(type, chapter, section) {
+        const container = document.createElement('div');
+        container.className = 'todo-v2-properties';
+        container.style.display = 'flex';
+        container.style.flexDirection = 'column';
+        container.style.gap = '8px';
+        container.style.alignItems = 'flex-end';
+        
+        // Get available properties for this chapter/section
+        const chapterId = chapter.id;
+        const sectionId = section ? section.id : null;
+        const properties = this.getAvailableProperties(chapterId, sectionId);
+        
+        if (properties.length === 0) {
+            // No properties available
+            const noPropsSpan = document.createElement('span');
+            noPropsSpan.textContent = 'No hay propiedades';
+            noPropsSpan.style.fontSize = '11px';
+            noPropsSpan.style.color = '#999';
+            noPropsSpan.style.fontStyle = 'italic';
+            container.appendChild(noPropsSpan);
+        } else {
+            // Create property items
+            properties.forEach(property => {
+                const propertyItem = this.createPropertyItem(chapterId, sectionId, property);
+                container.appendChild(propertyItem);
+            });
+        }
+        
+        return container;
+    }
+
+    createPropertyItem(chapterId, sectionId, property) {
+        const propertyContainer = document.createElement('div');
+        propertyContainer.className = 'todo-v2-property-item';
+        propertyContainer.style.display = 'flex';
+        propertyContainer.style.alignItems = 'center';
+        propertyContainer.style.gap = '8px';
+        propertyContainer.style.fontSize = '11px';
+        
+        // Property name
+        const propertyName = document.createElement('span');
+        propertyName.textContent = property + ':';
+        propertyName.style.color = '#666';
+        propertyName.style.fontWeight = '500';
+        propertyName.style.minWidth = '80px';
+        propertyName.style.textAlign = 'right';
+        
+        // Check if there's an assigned audio file
+        const assignedAudio = this.getAssignedAudioFile(chapterId, sectionId, property);
+        const hasAssignment = !!assignedAudio;
+        
+        // Create buttons for this property
+        const buttonsContainer = document.createElement('div');
+        buttonsContainer.className = 'todo-v2-property-buttons';
+        buttonsContainer.style.display = 'flex';
+        buttonsContainer.style.gap = '4px';
+        
+        const okBtn = this.createPropertyButton('OK', chapterId, sectionId, property, 'ok', hasAssignment);
+        const notOkBtn = this.createPropertyButton('NOT OK', chapterId, sectionId, property, 'notok', hasAssignment);
+        const confirmarBtn = this.createPropertyButton('CONFIRMAR', chapterId, sectionId, property, 'confirmar', hasAssignment);
+        
+        buttonsContainer.appendChild(okBtn);
+        buttonsContainer.appendChild(notOkBtn);
+        buttonsContainer.appendChild(confirmarBtn);
+        
+        propertyContainer.appendChild(propertyName);
+        propertyContainer.appendChild(buttonsContainer);
+        
+        return propertyContainer;
+    }
+
+    createPropertyButton(text, chapterId, sectionId, property, buttonType, isEnabled) {
+        const button = document.createElement('span');
+        button.textContent = text;
+        button.className = `todo-v2-property-button todo-v2-property-button-${buttonType}`;
+        button.style.fontSize = '9px';
+        button.style.padding = '2px 4px';
+        button.style.borderRadius = '3px';
+        button.style.transition = 'all 0.15s ease';
+        button.style.border = '1px solid #ddd';
+        button.style.minWidth = '28px';
+        button.style.textAlign = 'center';
+        button.style.userSelect = 'none';
+        button.style.lineHeight = '1';
+        
+        if (isEnabled) {
+            // Get the assigned audio file and check its status
+            const assignedAudio = this.getAssignedAudioFile(chapterId, sectionId, property);
+            const audioFilePath = this.getAudioFilePath(chapterId, sectionId, assignedAudio);
+            
+            button.style.cursor = 'pointer';
+            
+            // Check the status of the assigned audio file
+            let isActive = false;
+            if (audioFilePath) {
+                switch (buttonType) {
+                    case 'ok':
+                        isActive = this.isFileCompleted(audioFilePath);
+                        break;
+                    case 'notok':
+                        isActive = this.isFileNotCompleted && this.isFileNotCompleted(audioFilePath);
+                        break;
+                    case 'confirmar':
+                        isActive = this.isFileConfirmed(audioFilePath);
+                        break;
+                }
+            }
+            
+            // Set button style based on status
+            this.setPropertyButtonStyle(button, buttonType, isActive, true);
+            
+            // Add click handler
+            button.onclick = () => {
+                this.togglePropertyButtonStatus(chapterId, sectionId, property, buttonType, audioFilePath);
+            };
+        } else {
+            // Disabled state - no audio file assigned
+            button.style.cursor = 'not-allowed';
+            button.style.backgroundColor = '#f5f5f5';
+            button.style.color = '#ccc';
+            button.style.borderColor = '#e5e5e5';
+            button.style.opacity = '0.6';
+            
+            // Add tooltip
+            button.title = 'No hay archivo de audio asignado a esta propiedad';
+        }
+        
+        return button;
+    }
+
+    getAudioFilePath(chapterId, sectionId, audioFileName) {
+        if (!audioFileName) return null;
+        return sectionId ? `book1/${chapterId}/${sectionId}/${audioFileName}` : `book1/${chapterId}/${audioFileName}`;
+    }
+
+    setPropertyButtonStyle(button, buttonType, isActive, isEnabled) {
+        if (!isEnabled) {
+            // Disabled style already set in createPropertyButton
+            return;
+        }
+        
+        if (isActive) {
+            // Extract the base button type (remove set prefix if present)
+            const baseType = buttonType.includes('-') ? buttonType.split('-').pop() : buttonType;
+            
+            switch (baseType) {
+                case 'ok':
+                    button.style.backgroundColor = '#00C851';
+                    button.style.color = 'white';
+                    button.style.fontWeight = '600';
+                    button.style.borderColor = '#00C851';
+                    button.style.boxShadow = '0 1px 2px rgba(0,200,81,0.3)';
+                    break;
+                case 'notok':
+                    button.style.backgroundColor = '#CC0000';
+                    button.style.color = 'white';
+                    button.style.fontWeight = '600';
+                    button.style.borderColor = '#CC0000';
+                    button.style.boxShadow = '0 1px 2px rgba(204,0,0,0.3)';
+                    break;
+                case 'confirmar':
+                    button.style.backgroundColor = '#333333';
+                    button.style.color = 'white';
+                    button.style.fontWeight = '600';
+                    button.style.borderColor = '#333333';
+                    button.style.boxShadow = '0 1px 2px rgba(51,51,51,0.3)';
+                    break;
+            }
+        } else {
+            // Default/inactive state
+            button.style.backgroundColor = 'transparent';
+            button.style.color = '#666';
+            button.style.fontWeight = 'normal';
+            button.style.borderColor = '#ddd';
+            button.style.boxShadow = 'none';
+        }
+    }
+
+    togglePropertyButtonStatus(chapterId, sectionId, property, buttonType, audioFilePath) {
+        if (!audioFilePath) return;
+        
+        let currentStatus = false;
+        
+        // Get current status
+        switch (buttonType) {
+            case 'ok':
+                currentStatus = this.isFileCompleted(audioFilePath);
+                break;
+            case 'notok':
+                currentStatus = this.isFileNotCompleted && this.isFileNotCompleted(audioFilePath);
+                break;
+            case 'confirmar':
+                currentStatus = this.isFileConfirmed(audioFilePath);
+                break;
+        }
+        
+        const newStatus = !currentStatus;
+        const audioFileName = audioFilePath.split('/').pop();
+        
+        // Update the status
+        switch (buttonType) {
+            case 'ok':
+                this.markFileAsCompleted(audioFilePath, audioFileName, newStatus);
+                if (newStatus && this.isFileNotCompleted && this.isFileNotCompleted(audioFilePath)) {
+                    this.markFileAsNotCompleted(audioFilePath, audioFileName, false);
+                }
+                break;
+            case 'notok':
+                if (newStatus) {
+                    // Ensure not completed functionality exists
+                    if (!this.markFileAsNotCompleted) {
+                        this.notCompletedFiles = this.notCompletedFiles || {};
+                        this.markFileAsNotCompleted = async (filePath, fileName, isNotCompleted) => {
+                            if (isNotCompleted) {
+                                this.notCompletedFiles[filePath] = {
+                                    not_completed_at: new Date().toISOString(),
+                                    name: fileName
+                                };
+                            } else {
+                                delete this.notCompletedFiles[filePath];
+                            }
+                            try {
+                                await this.saveNotCompletedFiles();
+                            } catch (error) {
+                                console.warn('Could not save not completed files:', error);
+                            }
+                        };
+                        this.isFileNotCompleted = (filePath) => {
+                            return this.notCompletedFiles && this.notCompletedFiles.hasOwnProperty(filePath);
+                        };
+                    }
+                }
+                this.markFileAsNotCompleted(audioFilePath, audioFileName, newStatus);
+                if (newStatus && this.isFileCompleted(audioFilePath)) {
+                    this.markFileAsCompleted(audioFilePath, audioFileName, false);
+                }
+                break;
+            case 'confirmar':
+                this.markFileAsConfirmed(audioFilePath, audioFileName, newStatus);
+                break;
+        }
+        
+        // Refresh the entire Indice view to update all button states
+        setTimeout(() => this.refreshIndiceView(), 100);
+        
+        // Also refresh the current section view if open
+        setTimeout(() => this.refreshCurrentSectionView(), 100);
+    }
+
+    refreshIndiceView() {
+        // Check if we're currently in the Indice view
+        if (document.querySelector('.todo-v2-content-view')) {
+            this.renderTodoV2Content();
+        }
+    }
+
+    refreshCurrentSectionView() {
+        // Refresh the current section/chapter view if we're not in Indice
+        if (!document.querySelector('.todo-v2-content-view')) {
+            if (this.currentSection && this.currentChapter) {
+                this.loadSection(this.currentChapter, this.currentSection);
+            } else if (this.currentChapter) {
+                this.loadChapter(this.currentChapter);
+            }
+        }
+    }
+
+    synchronizeWithIndice() {
+        // Update todo completion styles if in old To-Do view
+        if (document.querySelector('.todo-content-view')) {
+            this.updateTodoCompletionStyles();
+        }
+        
+        // Refresh Indice view if it's open
+        setTimeout(() => this.refreshIndiceView(), 50);
     }
 
     createTodoV2ButtonSet(itemId, setType) {
@@ -2230,6 +2890,66 @@ class ChapterViewer {
         }
     }
 
+    async savePropertyAssignments() {
+        try {
+            const success = await this.githubApi.updateFile('property_assignments.json', this.propertyAssignments, 'Update property assignments');
+            if (!success) {
+                console.error('Failed to save property assignments to GitHub - data not shared!');
+            }
+        } catch (error) {
+            console.error('Could not save property assignments to GitHub:', error);
+        }
+    }
+
+    // Property assignment helper functions
+    getAvailableProperties(chapterId, sectionId = null) {
+        const key = sectionId ? `${chapterId}-${sectionId}` : chapterId;
+        return this.textManifestData[key] || [];
+    }
+
+    getPropertyKey(chapterId, sectionId, property) {
+        return sectionId ? `${chapterId}-${sectionId}-${property}` : `${chapterId}-${property}`;
+    }
+
+    assignAudioToProperty(chapterId, sectionId, property, audioFileName) {
+        const propertyKey = this.getPropertyKey(chapterId, sectionId, property);
+        
+        // Remove any existing assignment for this property
+        this.unassignProperty(propertyKey);
+        
+        // Assign the audio file to the property
+        this.propertyAssignments[propertyKey] = audioFileName;
+        
+        console.log(`Assigned ${audioFileName} to property ${propertyKey}`);
+        this.savePropertyAssignments();
+    }
+
+    unassignProperty(propertyKey) {
+        if (this.propertyAssignments[propertyKey]) {
+            console.log(`Unassigned property ${propertyKey} from ${this.propertyAssignments[propertyKey]}`);
+            delete this.propertyAssignments[propertyKey];
+            this.savePropertyAssignments();
+        }
+    }
+
+    getAssignedAudioFile(chapterId, sectionId, property) {
+        const propertyKey = this.getPropertyKey(chapterId, sectionId, property);
+        return this.propertyAssignments[propertyKey] || null;
+    }
+
+    isAudioFileAssigned(audioFileName) {
+        return Object.values(this.propertyAssignments).includes(audioFileName);
+    }
+
+    getPropertyForAudioFile(audioFileName) {
+        for (const [propertyKey, assignedFile] of Object.entries(this.propertyAssignments)) {
+            if (assignedFile === audioFileName) {
+                return propertyKey;
+            }
+        }
+        return null;
+    }
+
     navigateToSectionFromTodoV2(chapter, section) {
         console.log(`Navigating from Indice to ${chapter.id}-${section.id}: ${section.title}`);
         
@@ -2325,6 +3045,68 @@ class ChapterViewer {
         console.log('Audio manifest data loaded:', this.audioManifestData);
     }
 
+    async loadAllTextManifests() {
+        console.log('Loading all text manifests...');
+        
+        if (!this.bookStructure || !this.bookStructure.chapters) {
+            console.warn('Book structure not available for loading text manifests');
+            return;
+        }
+
+        // Load text manifests for all chapters and sections
+        for (const chapter of this.bookStructure.chapters) {
+            // Load chapter-level text manifest
+            const chapterPath = `book1/${chapter.id}/`;
+            try {
+                const chapterTextFiles = await this.findAllTextFiles(chapterPath);
+                this.textManifestData[`${chapter.id}`] = chapterTextFiles.map(tf => tf.name);
+            } catch (error) {
+                console.warn(`Could not load text manifest for chapter ${chapter.id}:`, error);
+                this.textManifestData[`${chapter.id}`] = [];
+            }
+
+            // Load section-level text manifests
+            if (chapter.sections) {
+                for (const section of chapter.sections) {
+                    const sectionPath = `book1/${chapter.id}/${section.id}/`;
+                    try {
+                        const sectionTextFiles = await this.findAllTextFiles(sectionPath);
+                        this.textManifestData[`${chapter.id}-${section.id}`] = sectionTextFiles.map(tf => tf.name);
+                    } catch (error) {
+                        console.warn(`Could not load text manifest for section ${chapter.id}-${section.id}:`, error);
+                        this.textManifestData[`${chapter.id}-${section.id}`] = [];
+                    }
+                }
+            }
+        }
+
+        console.log('Text manifest data loaded:', this.textManifestData);
+    }
+
+    async findAllTextFiles(folderPath) {
+        const manifestPath = `${folderPath}text_manifest.json`;
+        try {
+            const resp = await fetch(manifestPath, { cache: 'no-cache' });
+            if (resp.ok) {
+                const list = await resp.json();
+                console.log(`Loaded text manifest ${manifestPath}: ${list.length} files -`, list);
+                
+                return list.map(fn => ({
+                    path: folderPath + fn,
+                    name: fn,
+                    property: fn.replace(/\.txt$/, '') // Remove .txt extension for property name
+                }));
+            } else {
+                console.warn(`Failed to load text manifest ${manifestPath}: HTTP ${resp.status}`);
+            }
+        } catch (error) {
+            console.warn(`Error loading text manifest ${manifestPath}:`, error);
+        }
+
+        console.log(`No text manifest found for ${folderPath}`);
+        return [];
+    }
+
     async loadCharacterData() {
         console.log('Loading character data...');
         
@@ -2346,7 +3128,7 @@ class ChapterViewer {
     async loadSharedData() {
         console.log('Loading shared data from GitHub Issues...');
         try {
-            const [deleted, completed, comments, notCompleted, confirmed, todoV2] = await Promise.all([
+            const [deleted, completed, comments, notCompleted, confirmed, todoV2, propertyAssignments] = await Promise.all([
                 this.githubApi.getFileContent('deleted_files_history.json').catch(e => {
                     console.warn('Failed to load deleted files:', e);
                     return {};
@@ -2370,6 +3152,10 @@ class ChapterViewer {
                 this.githubApi.getFileContent('todo_v2_status.json').catch(e => {
                     console.warn('Failed to load Todo V2 status:', e);
                     return {};
+                }),
+                this.githubApi.getFileContent('property_assignments.json').catch(e => {
+                    console.warn('Failed to load property assignments:', e);
+                    return {};
                 })
             ]);
 
@@ -2379,6 +3165,7 @@ class ChapterViewer {
             this.notCompletedFiles = notCompleted || {};
             this.confirmedFiles = confirmed || {};
             this.todoV2Status = todoV2 || {};
+            this.propertyAssignments = propertyAssignments || {};
 
             console.log('Shared data loaded from GitHub Issues:', {
                 deletedCount: Object.keys(this.deletedFiles).length,
@@ -2386,7 +3173,8 @@ class ChapterViewer {
                 commentsCount: Object.keys(this.fileComments).length,
                 notCompletedCount: Object.keys(this.notCompletedFiles).length,
                 confirmedCount: Object.keys(this.confirmedFiles).length,
-                todoV2Count: Object.keys(this.todoV2Status).length
+                todoV2Count: Object.keys(this.todoV2Status).length,
+                propertyAssignmentsCount: Object.keys(this.propertyAssignments).length
             });
         } catch (error) {
             console.warn('Error loading shared data from GitHub:', error);
@@ -2396,6 +3184,7 @@ class ChapterViewer {
             this.notCompletedFiles = {};
             this.confirmedFiles = {};
             this.todoV2Status = {};
+            this.propertyAssignments = {};
         }
     }
 
