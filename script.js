@@ -375,14 +375,15 @@ class ChapterViewer {
         }
         
         // Use titles directly from book-structure.json (fast, no HTTP requests)
-        this.bookStructure.chapters.forEach(chapter => {
+        this.bookStructure.chapters.forEach((chapter, chapterIndex) => {
             const chapterLi = document.createElement('li');
             chapterLi.className = 'chapter-item';
             
             const chapterLink = document.createElement('a');
             chapterLink.href = '#';
-            chapterLink.textContent = chapter.title; // Use pre-loaded title
+            chapterLink.textContent = `${chapterIndex + 1}. ${chapter.title}`; // Add chapter number
             chapterLink.className = 'chapter-link';
+            chapterLink.setAttribute('data-chapter-id', chapter.id);
             chapterLink.onclick = (e) => {
                 e.preventDefault();
                 this.loadChapter(chapter);
@@ -395,14 +396,16 @@ class ChapterViewer {
                 const sectionsUl = document.createElement('ul');
                 sectionsUl.className = 'sections-list';
                 
-                chapter.sections.forEach(section => {
+                chapter.sections.forEach((section, sectionIndex) => {
                     const sectionLi = document.createElement('li');
                     sectionLi.className = 'section-item';
                     
                     const sectionLink = document.createElement('a');
                     sectionLink.href = '#';
-                    sectionLink.textContent = section.title; // Use pre-loaded title
+                    sectionLink.textContent = `${chapterIndex + 1}.${sectionIndex + 1}. ${section.title}`; // Add section number
                     sectionLink.className = 'section-link';
+                    sectionLink.setAttribute('data-chapter-id', chapter.id);
+                    sectionLink.setAttribute('data-section-id', section.id);
                     sectionLink.onclick = (e) => {
                         e.preventDefault();
                         this.loadSection(chapter, section);
@@ -436,7 +439,14 @@ class ChapterViewer {
         try {
             // Update active nav item
             document.querySelectorAll('.sidebar nav a').forEach(a => a.classList.remove('active'));
-            event.target.classList.add('active');
+            
+            // Find and activate the corresponding chapter link
+            const chapterLinks = document.querySelectorAll('.chapter-link');
+            chapterLinks.forEach(link => {
+                if (link.getAttribute('data-chapter-id') === chapter.id) {
+                    link.classList.add('active');
+                }
+            });
             
             // Load chapter text
             const response = await fetch(chapter.textFile);
@@ -469,7 +479,23 @@ class ChapterViewer {
         try {
             // Update active nav item
             document.querySelectorAll('.sidebar nav a').forEach(a => a.classList.remove('active'));
-            event.target.classList.add('active');
+            
+            // Find and activate the corresponding section link
+            const sectionLinks = document.querySelectorAll('.section-link');
+            sectionLinks.forEach(link => {
+                if (link.getAttribute('data-chapter-id') === chapter.id && 
+                    link.getAttribute('data-section-id') === section.id) {
+                    link.classList.add('active');
+                    // Also expand the chapter if it's collapsed
+                    const chapterItem = link.closest('.chapter-item');
+                    const sectionsUl = chapterItem.querySelector('.sections-list');
+                    const chapterLink = chapterItem.querySelector('.chapter-link');
+                    if (sectionsUl) {
+                        sectionsUl.style.display = 'block';
+                        chapterLink.classList.add('expanded');
+                    }
+                }
+            });
             
             // Load section text
             const response = await fetch(section.textFile);
@@ -1327,7 +1353,8 @@ class ChapterViewer {
         // Find and activate the corresponding section link in the sidebar
         const sectionLinks = document.querySelectorAll('.section-link');
         sectionLinks.forEach(link => {
-            if (link.textContent.trim() === section.title) {
+            if (link.getAttribute('data-chapter-id') === chapter.id && 
+                link.getAttribute('data-section-id') === section.id) {
                 link.classList.add('active');
                 // Also expand the chapter if it's collapsed
                 const chapterItem = link.closest('.chapter-item');
@@ -3025,7 +3052,8 @@ class ChapterViewer {
         // Find and activate the corresponding section link in the sidebar
         const sectionLinks = document.querySelectorAll('.section-link');
         sectionLinks.forEach(link => {
-            if (link.textContent.trim() === section.title) {
+            if (link.getAttribute('data-chapter-id') === chapter.id && 
+                link.getAttribute('data-section-id') === section.id) {
                 link.classList.add('active');
                 // Also expand the chapter if it's collapsed
                 const chapterItem = link.closest('.chapter-item');
@@ -3051,7 +3079,7 @@ class ChapterViewer {
         // Find and activate the corresponding chapter link in the sidebar
         const chapterLinks = document.querySelectorAll('.chapter-link');
         chapterLinks.forEach(link => {
-            if (link.textContent.trim() === chapter.title) {
+            if (link.getAttribute('data-chapter-id') === chapter.id) {
                 link.classList.add('active');
             }
         });
