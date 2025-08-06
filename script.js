@@ -1947,6 +1947,11 @@ class ChapterViewer {
         // Create the tree structure
         const treeContainer = document.createElement('div');
         treeContainer.className = 'todo-v2-tree';
+        treeContainer.style.backgroundColor = '#fafafa';
+        treeContainer.style.border = '1px solid #e8eaed';
+        treeContainer.style.borderRadius = '8px';
+        treeContainer.style.padding = '16px';
+        treeContainer.style.marginTop = '20px';
         
         this.renderTodoV2Tree(treeContainer);
         
@@ -1972,7 +1977,9 @@ class ChapterViewer {
         // Chapters level
         const chaptersContainer = document.createElement('div');
         chaptersContainer.className = 'todo-v2-level-1';
-        chaptersContainer.style.marginLeft = '20px';
+        chaptersContainer.style.marginLeft = '24px';
+        chaptersContainer.style.borderLeft = '2px solid #e8eaed';
+        chaptersContainer.style.paddingLeft = '16px';
         
         this.bookStructure.chapters.forEach(chapter => {
             const chapterItem = this.createTodoV2Item('chapter', chapter.title, chapter.id, chapter, null);
@@ -1982,7 +1989,11 @@ class ChapterViewer {
             if (chapter.sections && chapter.sections.length > 0) {
                 const sectionsContainer = document.createElement('div');
                 sectionsContainer.className = 'todo-v2-level-2';
-                sectionsContainer.style.marginLeft = '20px';
+                sectionsContainer.style.marginLeft = '24px';
+                sectionsContainer.style.borderLeft = '2px solid #f1f3f4';
+                sectionsContainer.style.paddingLeft = '16px';
+                sectionsContainer.style.marginTop = '4px';
+                sectionsContainer.style.marginBottom = '8px';
                 
                 chapter.sections.forEach(section => {
                     const sectionItem = this.createTodoV2Item('section', section.title, `${chapter.id}-${section.id}`, chapter, section);
@@ -2001,65 +2012,134 @@ class ChapterViewer {
         itemContainer.className = `todo-v2-item todo-v2-item-${type}`;
         itemContainer.style.display = 'flex';
         itemContainer.style.alignItems = 'center';
-        itemContainer.style.marginBottom = '8px';
-        itemContainer.style.padding = '4px 0';
+        itemContainer.style.marginBottom = '6px';
+        itemContainer.style.padding = '6px 8px';
+        itemContainer.style.borderRadius = '4px';
+        itemContainer.style.backgroundColor = type === 'book' ? '#f8f9fa' : type === 'chapter' ? '#f1f3f4' : '#ffffff';
+        itemContainer.style.border = '1px solid #e8eaed';
         
         // Title (clickable)
         const titleSpan = document.createElement('span');
         titleSpan.className = 'todo-v2-title';
         titleSpan.textContent = title;
-        titleSpan.style.cursor = 'pointer';
+        titleSpan.style.cursor = type === 'book' ? 'default' : 'pointer';
         titleSpan.style.marginRight = '20px';
-        titleSpan.style.minWidth = '200px';
+        titleSpan.style.flex = '1';
+        titleSpan.style.minWidth = '250px';
+        titleSpan.style.maxWidth = '300px';
         titleSpan.style.color = '#333';
-        titleSpan.style.textDecoration = 'underline';
+        titleSpan.style.fontWeight = type === 'book' ? 'bold' : type === 'chapter' ? '600' : 'normal';
+        titleSpan.style.fontSize = type === 'book' ? '16px' : type === 'chapter' ? '14px' : '13px';
+        titleSpan.style.textDecoration = type === 'book' ? 'none' : 'underline';
         
         // Add click handler for navigation
-        titleSpan.onclick = () => {
-            if (type === 'section' && chapter && section) {
-                this.navigateToSectionFromTodoV2(chapter, section);
-            } else if (type === 'chapter' && chapter) {
-                this.navigateToChapterFromTodoV2(chapter);
-            }
-            // Book level doesn't navigate anywhere
-        };
+        if (type !== 'book') {
+            titleSpan.onclick = () => {
+                if (type === 'section' && chapter && section) {
+                    this.navigateToSectionFromTodoV2(chapter, section);
+                } else if (type === 'chapter' && chapter) {
+                    this.navigateToChapterFromTodoV2(chapter);
+                }
+            };
+        }
         
         itemContainer.appendChild(titleSpan);
+        
+        // Check if this is a synopsis section (contains "sinopsis" in title, case insensitive)
+        const isSynopsis = type === 'section' && section && section.title.toLowerCase().includes('sinopsis');
         
         // Status buttons container
         const buttonsContainer = document.createElement('div');
         buttonsContainer.className = 'todo-v2-buttons';
         buttonsContainer.style.display = 'flex';
-        buttonsContainer.style.gap = '8px';
+        buttonsContainer.style.gap = '12px';
+        buttonsContainer.style.alignItems = 'center';
         
-        // Create OK, NOT OK, CONFIRMAR buttons
-        const okBtn = this.createTodoV2Button('OK', id, 'ok');
-        const notOkBtn = this.createTodoV2Button('NOT OK', id, 'notok');
-        const confirmarBtn = this.createTodoV2Button('CONFIRMAR', id, 'confirmar');
-        
-        buttonsContainer.appendChild(okBtn);
-        buttonsContainer.appendChild(notOkBtn);
-        buttonsContainer.appendChild(confirmarBtn);
+        if (isSynopsis) {
+            // Single set of buttons for synopsis sections (no prefix for basic buttons)
+            const buttonSet = this.createTodoV2ButtonSet(id, '');
+            buttonsContainer.appendChild(buttonSet);
+        } else {
+            // Two sets of buttons for non-synopsis sections
+            const buttonSet1 = this.createTodoV2ButtonSet(id, 'set1');
+            const buttonSet2 = this.createTodoV2ButtonSet(id, 'set2');
+            
+            // Add labels for the button sets
+            const label1 = document.createElement('span');
+            label1.textContent = 'Set 1:';
+            label1.style.fontSize = '11px';
+            label1.style.color = '#666';
+            label1.style.fontWeight = '500';
+            
+            const label2 = document.createElement('span');
+            label2.textContent = 'Set 2:';
+            label2.style.fontSize = '11px';
+            label2.style.color = '#666';
+            label2.style.fontWeight = '500';
+            
+            buttonsContainer.appendChild(label1);
+            buttonsContainer.appendChild(buttonSet1);
+            buttonsContainer.appendChild(label2);
+            buttonsContainer.appendChild(buttonSet2);
+        }
         
         itemContainer.appendChild(buttonsContainer);
         
         return itemContainer;
     }
 
+    createTodoV2ButtonSet(itemId, setType) {
+        const setContainer = document.createElement('div');
+        setContainer.className = 'todo-v2-button-set';
+        setContainer.style.display = 'flex';
+        setContainer.style.gap = '4px';
+        
+        // Create OK, NOT OK, CONFIRMAR buttons for this set
+        const prefix = setType ? `${setType}-` : '';
+        const okBtn = this.createTodoV2Button('OK', itemId, `${prefix}ok`);
+        const notOkBtn = this.createTodoV2Button('NOT OK', itemId, `${prefix}notok`);
+        const confirmarBtn = this.createTodoV2Button('CONFIRMAR', itemId, `${prefix}confirmar`);
+        
+        setContainer.appendChild(okBtn);
+        setContainer.appendChild(notOkBtn);
+        setContainer.appendChild(confirmarBtn);
+        
+        return setContainer;
+    }
+
     createTodoV2Button(text, itemId, buttonType) {
         const button = document.createElement('span');
         button.textContent = text;
         button.className = `todo-v2-button todo-v2-button-${buttonType}`;
-        button.style.fontSize = '12px';
+        button.style.fontSize = '10px';
         button.style.cursor = 'pointer';
-        button.style.padding = '2px 6px';
-        button.style.borderRadius = '3px';
-        button.style.transition = 'all 0.2s ease';
+        button.style.padding = '3px 6px';
+        button.style.borderRadius = '4px';
+        button.style.transition = 'all 0.15s ease';
         button.style.border = '1px solid #ddd';
+        button.style.minWidth = '35px';
+        button.style.textAlign = 'center';
+        button.style.userSelect = 'none';
+        button.style.lineHeight = '1';
         
         // Set initial state
         const isActive = this.getTodoV2Status(itemId, buttonType);
         this.setTodoV2ButtonStyle(button, buttonType, isActive);
+        
+        // Add hover effect
+        button.onmouseenter = () => {
+            if (!this.getTodoV2Status(itemId, buttonType)) {
+                button.style.backgroundColor = '#f5f5f5';
+                button.style.borderColor = '#ccc';
+            }
+        };
+        
+        button.onmouseleave = () => {
+            if (!this.getTodoV2Status(itemId, buttonType)) {
+                button.style.backgroundColor = 'transparent';
+                button.style.borderColor = '#ddd';
+            }
+        };
         
         // Add click handler
         button.onclick = async () => {
@@ -2078,24 +2158,30 @@ class ChapterViewer {
 
     setTodoV2ButtonStyle(button, buttonType, isActive) {
         if (isActive) {
-            switch (buttonType) {
+            // Extract the base button type (remove set prefix if present)
+            const baseType = buttonType.includes('-') ? buttonType.split('-').pop() : buttonType;
+            
+            switch (baseType) {
                 case 'ok':
                     button.style.backgroundColor = '#00C851';
                     button.style.color = 'white';
-                    button.style.fontWeight = 'bold';
+                    button.style.fontWeight = '600';
                     button.style.borderColor = '#00C851';
+                    button.style.boxShadow = '0 1px 3px rgba(0,200,81,0.3)';
                     break;
                 case 'notok':
                     button.style.backgroundColor = '#CC0000';
                     button.style.color = 'white';
-                    button.style.fontWeight = 'bold';
+                    button.style.fontWeight = '600';
                     button.style.borderColor = '#CC0000';
+                    button.style.boxShadow = '0 1px 3px rgba(204,0,0,0.3)';
                     break;
                 case 'confirmar':
                     button.style.backgroundColor = '#333333';
                     button.style.color = 'white';
-                    button.style.fontWeight = 'bold';
+                    button.style.fontWeight = '600';
                     button.style.borderColor = '#333333';
+                    button.style.boxShadow = '0 1px 3px rgba(51,51,51,0.3)';
                     break;
             }
         } else {
@@ -2104,6 +2190,7 @@ class ChapterViewer {
             button.style.color = '#666';
             button.style.fontWeight = 'normal';
             button.style.borderColor = '#ddd';
+            button.style.boxShadow = 'none';
         }
     }
 
