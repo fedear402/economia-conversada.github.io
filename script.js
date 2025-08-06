@@ -589,6 +589,12 @@ class ChapterViewer {
 
         // Add properties display for sections and chapters
         if (type === 'section' || type === 'chapter') {
+            // Clear any existing properties display first to prevent stale data
+            const existingProperties = header.querySelector('.properties-display');
+            if (existingProperties) {
+                existingProperties.remove();
+            }
+            
             const propertiesDisplay = this.createPropertiesDisplay(type, parentChapter);
             if (propertiesDisplay) {
                 header.appendChild(propertiesDisplay);
@@ -1554,6 +1560,9 @@ class ChapterViewer {
             const property = availableProperties[0];
             this.assignAudioToProperty(chapterId, sectionId, property, audioFile.name);
             console.log(`Auto-assigned ${audioFile.name} to ${property} (only option available)`);
+            
+            // Refresh current view to show the assignment
+            this.refreshCurrentView();
             return;
         }
 
@@ -1775,6 +1784,12 @@ class ChapterViewer {
     schedulePropertiesDisplayUpdate(header, type, parentChapter) {
         // Try to add properties display after text manifests are loaded
         setTimeout(() => {
+            // Clear any existing properties display first to prevent stale data
+            const existingProperties = header.querySelector('.properties-display');
+            if (existingProperties) {
+                existingProperties.remove();
+            }
+            
             const propertiesDisplay = this.createPropertiesDisplay(type, parentChapter);
             if (propertiesDisplay) {
                 // Insert the properties display right after the description (if exists) or title
@@ -1787,6 +1802,12 @@ class ChapterViewer {
             } else {
                 // If still not available after delay, try once more in case manifests are still loading
                 setTimeout(() => {
+                    // Clear any existing properties display again before final retry
+                    const existingDelayedProperties = header.querySelector('.properties-display');
+                    if (existingDelayedProperties) {
+                        existingDelayedProperties.remove();
+                    }
+                    
                     const delayedPropertiesDisplay = this.createPropertiesDisplay(type, parentChapter);
                     if (delayedPropertiesDisplay) {
                         // Insert the properties display right after the description (if exists) or title
