@@ -375,13 +375,22 @@ class ChapterViewer {
         }
         
         // Use titles directly from book-structure.json (fast, no HTTP requests)
+        let actualChapterNumber = 1; // Track actual chapter numbers separately
         this.bookStructure.chapters.forEach((chapter, chapterIndex) => {
             const chapterLi = document.createElement('li');
             chapterLi.className = 'chapter-item';
             
             const chapterLink = document.createElement('a');
             chapterLink.href = '#';
-            chapterLink.textContent = `${chapterIndex + 1}. ${chapter.title}`; // Add chapter number
+            
+            // Only number actual chapters (skip Intro and other special sections)
+            if (chapter.id.startsWith('C') && /^C\d+$/.test(chapter.id)) {
+                chapterLink.textContent = `${actualChapterNumber}. ${chapter.title}`;
+                actualChapterNumber++;
+            } else {
+                chapterLink.textContent = chapter.title; // No number for Intro, etc.
+            }
+            
             chapterLink.className = 'chapter-link';
             chapterLink.setAttribute('data-chapter-id', chapter.id);
             chapterLink.onclick = (e) => {
@@ -402,7 +411,14 @@ class ChapterViewer {
                     
                     const sectionLink = document.createElement('a');
                     sectionLink.href = '#';
-                    sectionLink.textContent = `${chapterIndex + 1}.${sectionIndex + 1}. ${section.title}`; // Add section number
+                    
+                    // Only number sections for actual chapters (skip sections in Intro, etc.)
+                    if (chapter.id.startsWith('C') && /^C\d+$/.test(chapter.id)) {
+                        sectionLink.textContent = `${actualChapterNumber - 1}.${sectionIndex + 1}. ${section.title}`;
+                    } else {
+                        sectionLink.textContent = section.title; // No number for sections in Intro, etc.
+                    }
+                    
                     sectionLink.className = 'section-link';
                     sectionLink.setAttribute('data-chapter-id', chapter.id);
                     sectionLink.setAttribute('data-section-id', section.id);
