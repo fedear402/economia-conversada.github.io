@@ -592,6 +592,10 @@ class ChapterViewer {
             const propertiesDisplay = this.createPropertiesDisplay(type, parentChapter);
             if (propertiesDisplay) {
                 header.appendChild(propertiesDisplay);
+            } else {
+                // If properties display is null (likely due to missing text manifest data),
+                // create a placeholder and try to populate it after a short delay
+                this.schedulePropertiesDisplayUpdate(header, type, parentChapter);
             }
         }
         
@@ -1758,6 +1762,36 @@ class ChapterViewer {
         
         // Also refresh Indice if open
         this.refreshIndiceView();
+    }
+
+    schedulePropertiesDisplayUpdate(header, type, parentChapter) {
+        // Try to add properties display after text manifests are loaded
+        setTimeout(() => {
+            const propertiesDisplay = this.createPropertiesDisplay(type, parentChapter);
+            if (propertiesDisplay) {
+                // Insert the properties display right after the description (if exists) or title
+                const description = header.querySelector('.section-description, .chapter-description');
+                if (description) {
+                    description.insertAdjacentElement('afterend', propertiesDisplay);
+                } else {
+                    header.appendChild(propertiesDisplay);
+                }
+            } else {
+                // If still not available after delay, try once more in case manifests are still loading
+                setTimeout(() => {
+                    const delayedPropertiesDisplay = this.createPropertiesDisplay(type, parentChapter);
+                    if (delayedPropertiesDisplay) {
+                        // Insert the properties display right after the description (if exists) or title
+                        const description = header.querySelector('.section-description, .chapter-description');
+                        if (description) {
+                            description.insertAdjacentElement('afterend', delayedPropertiesDisplay);
+                        } else {
+                            header.appendChild(delayedPropertiesDisplay);
+                        }
+                    }
+                }, 500);
+            }
+        }, 100);
     }
 
     createPropertiesDisplay(type, parentChapter) {
