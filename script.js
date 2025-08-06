@@ -333,21 +333,21 @@ class ChapterViewer {
         todoLi.appendChild(todoLink);
         ul.appendChild(todoLi);
         
-        // Add To-Do V2 item
-        const todoV2Li = document.createElement('li');
-        todoV2Li.className = 'chapter-item';
+        // Add Indice item
+        const indiceV2Li = document.createElement('li');
+        indiceV2Li.className = 'chapter-item';
         
-        const todoV2Link = document.createElement('a');
-        todoV2Link.href = '#';
-        todoV2Link.textContent = 'To-Do (V2)';
-        todoV2Link.className = 'chapter-link';
-        todoV2Link.onclick = (e) => {
+        const indiceV2Link = document.createElement('a');
+        indiceV2Link.href = '#';
+        indiceV2Link.textContent = 'Indice';
+        indiceV2Link.className = 'chapter-link';
+        indiceV2Link.onclick = (e) => {
             e.preventDefault();
             this.loadTodoV2View();
         };
         
-        todoV2Li.appendChild(todoV2Link);
-        ul.appendChild(todoV2Li);
+        indiceV2Li.appendChild(indiceV2Link);
+        ul.appendChild(indiceV2Li);
         
         // Add Deleted Files item
         const deletedCount = Object.keys(this.deletedFiles).length;
@@ -1915,7 +1915,7 @@ class ChapterViewer {
             this.currentChapter = null;
             this.currentSection = null;
         } catch (error) {
-            console.error('Error loading To-Do V2 view:', error);
+            console.error('Error loading Indice view:', error);
             this.renderTodoV2Error();
         }
     }
@@ -1932,17 +1932,8 @@ class ChapterViewer {
         
         const title = document.createElement('h1');
         title.className = 'todo-v2-title-main';
-        title.textContent = 'To-Do (V2): Estado por Estructura';
+        title.textContent = 'Indice';
         todoV2View.appendChild(title);
-        
-        const description = document.createElement('div');
-        description.className = 'todo-v2-description';
-        description.innerHTML = `
-            <p>Esta vista muestra el estado de progreso organizado por la estructura del libro. 
-            Cada elemento (libro, capítulo, sección) tiene sus propios controles de estado independientes.</p>
-            <p><strong>Click en los nombres</strong> para navegar a esa sección del libro.</p>
-        `;
-        todoV2View.appendChild(description);
         
         // Create the tree structure
         const treeContainer = document.createElement('div');
@@ -2045,9 +2036,6 @@ class ChapterViewer {
         
         itemContainer.appendChild(titleSpan);
         
-        // Check if this is a synopsis section (contains "sinopsis" in title, case insensitive)
-        const isSynopsis = type === 'section' && section && section.title.toLowerCase().includes('sinopsis');
-        
         // Status buttons container
         const buttonsContainer = document.createElement('div');
         buttonsContainer.className = 'todo-v2-buttons';
@@ -2055,33 +2043,43 @@ class ChapterViewer {
         buttonsContainer.style.gap = '12px';
         buttonsContainer.style.alignItems = 'center';
         
-        if (isSynopsis) {
-            // Single set of buttons for synopsis sections (no prefix for basic buttons)
+        if (type === 'section') {
+            // Check if this is a synopsis section (contains "sinopsis" in title, case insensitive)
+            const isSynopsis = section && section.title.toLowerCase().includes('sinopsis');
+            
+            if (isSynopsis) {
+                // Single set of buttons for synopsis sections (no prefix for basic buttons)
+                const buttonSet = this.createTodoV2ButtonSet(id, '');
+                buttonsContainer.appendChild(buttonSet);
+            } else {
+                // Two sets of buttons for non-synopsis sections
+                const buttonSet1 = this.createTodoV2ButtonSet(id, 'descripcion');
+                const buttonSet2 = this.createTodoV2ButtonSet(id, 'conversacion');
+                
+                // Add labels for the button sets
+                const label1 = document.createElement('span');
+                label1.textContent = 'Descripción de escena:';
+                label1.style.fontSize = '11px';
+                label1.style.color = '#666';
+                label1.style.fontWeight = '500';
+                
+                const label2 = document.createElement('span');
+                label2.textContent = 'Conversación:';
+                label2.style.fontSize = '11px';
+                label2.style.color = '#666';
+                label2.style.fontWeight = '500';
+                
+                buttonsContainer.appendChild(label1);
+                buttonsContainer.appendChild(buttonSet1);
+                buttonsContainer.appendChild(label2);
+                buttonsContainer.appendChild(buttonSet2);
+            }
+        } else if (type === 'chapter') {
+            // Single set of buttons for chapter level only
             const buttonSet = this.createTodoV2ButtonSet(id, '');
             buttonsContainer.appendChild(buttonSet);
-        } else {
-            // Two sets of buttons for non-synopsis sections
-            const buttonSet1 = this.createTodoV2ButtonSet(id, 'set1');
-            const buttonSet2 = this.createTodoV2ButtonSet(id, 'set2');
-            
-            // Add labels for the button sets
-            const label1 = document.createElement('span');
-            label1.textContent = 'Set 1:';
-            label1.style.fontSize = '11px';
-            label1.style.color = '#666';
-            label1.style.fontWeight = '500';
-            
-            const label2 = document.createElement('span');
-            label2.textContent = 'Set 2:';
-            label2.style.fontSize = '11px';
-            label2.style.color = '#666';
-            label2.style.fontWeight = '500';
-            
-            buttonsContainer.appendChild(label1);
-            buttonsContainer.appendChild(buttonSet1);
-            buttonsContainer.appendChild(label2);
-            buttonsContainer.appendChild(buttonSet2);
         }
+        // No buttons for book level
         
         itemContainer.appendChild(buttonsContainer);
         
@@ -2233,9 +2231,9 @@ class ChapterViewer {
     }
 
     navigateToSectionFromTodoV2(chapter, section) {
-        console.log(`Navigating from To-Do V2 to ${chapter.id}-${section.id}: ${section.title}`);
+        console.log(`Navigating from Indice to ${chapter.id}-${section.id}: ${section.title}`);
         
-        // Update active nav item - remove active from To-Do V2 and add to the section
+        // Update active nav item - remove active from Indice and add to the section
         document.querySelectorAll('.sidebar nav a').forEach(a => a.classList.remove('active'));
         
         // Find and activate the corresponding section link in the sidebar
@@ -2259,9 +2257,9 @@ class ChapterViewer {
     }
 
     navigateToChapterFromTodoV2(chapter) {
-        console.log(`Navigating from To-Do V2 to chapter ${chapter.id}: ${chapter.title}`);
+        console.log(`Navigating from Indice to chapter ${chapter.id}: ${chapter.title}`);
         
-        // Update active nav item - remove active from To-Do V2 and add to the chapter
+        // Update active nav item - remove active from Indice and add to the chapter
         document.querySelectorAll('.sidebar nav a').forEach(a => a.classList.remove('active'));
         
         // Find and activate the corresponding chapter link in the sidebar
@@ -2280,9 +2278,9 @@ class ChapterViewer {
         const content = document.getElementById('chapter-content');
         content.innerHTML = `
             <div class="todo-v2-content-view">
-                <h1 class="todo-v2-title-main">To-Do V2: Error</h1>
+                <h1 class="todo-v2-title-main">Indice: Error</h1>
                 <div class="todo-v2-description">
-                    <p><strong>Error:</strong> No se pudo cargar la vista To-Do V2.</p>
+                    <p><strong>Error:</strong> No se pudo cargar la vista del Indice.</p>
                     <p>Por favor, asegúrate de que la estructura del libro esté cargada correctamente.</p>
                 </div>
             </div>
