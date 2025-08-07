@@ -2592,26 +2592,9 @@ class ChapterViewer {
         const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
         
         if (isLocalhost) {
-            console.log('Running on localhost - using mock data and localStorage');
-            
-            // Create some mock recent changes for localhost testing
-            const mockChanges = this.createMockRecentChanges();
-            changes.push(...mockChanges);
-            
-            // Also include any localStorage changes (from comments, etc.)
-            const localChanges = JSON.parse(localStorage.getItem('recentChanges') || '[]');
-            localChanges.forEach(change => {
-                changes.push({
-                    date: new Date(change.timestamp).toLocaleString(),
-                    type: change.type,
-                    typeLabel: change.type === 'comment' ? 'Comentario' : 'Archivo Nuevo',
-                    description: change.type === 'comment' 
-                        ? `"${change.description.substring(0, 100)}${change.description.length > 100 ? '...' : ''}"` 
-                        : change.description,
-                    location: change.location,
-                    timestamp: change.timestamp
-                });
-            });
+            console.log('Running on localhost - GitHub API not available, no data to show');
+            // On localhost, GitHub API won't work, so no changes to display
+            return [];
             
         } else {
             console.log('Running on deployed site - trying GitHub API...');
@@ -2646,25 +2629,9 @@ class ChapterViewer {
                 });
 
             } catch (error) {
-                console.error('GitHub API failed, falling back to localStorage:', error);
-                
-                // Fallback to localStorage and mock data
-                const mockChanges = this.createMockRecentChanges();
-                changes.push(...mockChanges);
-                
-                const localChanges = JSON.parse(localStorage.getItem('recentChanges') || '[]');
-                localChanges.forEach(change => {
-                    changes.push({
-                        date: new Date(change.timestamp).toLocaleString(),
-                        type: change.type,
-                        typeLabel: change.type === 'comment' ? 'Comentario' : 'Archivo Nuevo',
-                        description: change.type === 'comment' 
-                            ? `"${change.description.substring(0, 100)}${change.description.length > 100 ? '...' : ''}"` 
-                            : change.description,
-                        location: change.location,
-                        timestamp: change.timestamp
-                    });
-                });
+                console.error('GitHub API failed - no data to show:', error);
+                // Don't add any mock data - user wants only real data
+                return [];
             }
         }
         
