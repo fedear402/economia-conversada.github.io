@@ -2773,39 +2773,79 @@ class ChapterViewer {
             console.log('Raw commits received:', commits.length);
             const recentCommits = [];
             
-            // Process commits without fetching individual details (much faster)
-            commits.forEach((commit, index) => {
+            // Process only the first few commits to get detailed file information
+            const commitsToProcess = commits.slice(0, 10); // Process fewer commits but get details
+            
+            for (const commit of commitsToProcess) {
                 const commitMessage = commit.commit.message;
                 const commitDate = commit.commit.author.date;
+                const commitSha = commit.sha;
                 
-                console.log(`Processing commit ${index + 1}: ${commitMessage.substring(0, 50)}...`);
+                console.log(`Processing commit: ${commitMessage.substring(0, 50)}...`);
                 
-                // Always show the commit, but try to extract file info if available
-                const audioFilePattern = /(\S+\.mp3)|(\S+\.txt)|(\S+\.json)/gi;
-                const fileMatches = commitMessage.match(audioFilePattern);
-                
-                if (fileMatches) {
-                    fileMatches.forEach(fileName => {
-                        // Extract just the filename without path
-                        const cleanFileName = fileName.split('/').pop();
-                        
-                        recentCommits.push({
-                            description: `Archivo: ${cleanFileName}`,
-                            location: this.guessLocationFromCommitMessage(commitMessage, cleanFileName),
-                            timestamp: commitDate,
-                            commitMessage: commitMessage
-                        });
+                try {
+                    // Fetch detailed commit info to get the files
+                    const detailResponse = await fetch(`https://api.github.com/repos/${this.githubApi.owner}/${this.githubApi.repo}/commits/${commitSha}`, {
+                        headers: {
+                            'Accept': 'application/vnd.github.v3+json'
+                        }
                     });
-                } else {
-                    // Show the commit message itself
+                    
+                    if (detailResponse.ok) {
+                        const commitDetails = await detailResponse.json();
+                        const files = commitDetails.files || [];
+                        
+                        // Filter for relevant file types
+                        const relevantFiles = files.filter(file => 
+                            file.filename.match(/\.(mp3|txt|json|wav|ogg|m4a)$/i) &&
+                            (file.status === 'added' || file.status === 'modified')
+                        );
+                        
+                        if (relevantFiles.length > 0) {
+                            relevantFiles.forEach(file => {
+                                const fileName = file.filename.split('/').pop();
+                                const status = file.status === 'added' ? 'Archivo Agregado' : 'Archivo Modificado';
+                                
+                                recentCommits.push({
+                                    description: `${fileName}`,
+                                    location: this.guessLocationFromFilePath(file.filename),
+                                    timestamp: commitDate,
+                                    commitMessage: commitMessage,
+                                    type: status
+                                });
+                            });
+                        } else {
+                            // No relevant files, show commit message
+                            recentCommits.push({
+                                description: commitMessage.length > 80 ? commitMessage.substring(0, 80) + '...' : commitMessage,
+                                location: 'General',
+                                timestamp: commitDate,
+                                commitMessage: commitMessage,
+                                type: 'Cambio General'
+                            });
+                        }
+                    } else {
+                        // Fallback to commit message if detailed fetch fails
+                        recentCommits.push({
+                            description: commitMessage.length > 80 ? commitMessage.substring(0, 80) + '...' : commitMessage,
+                            location: 'General',
+                            timestamp: commitDate,
+                            commitMessage: commitMessage,
+                            type: 'Cambio General'
+                        });
+                    }
+                } catch (detailError) {
+                    console.warn('Failed to fetch commit details:', detailError);
+                    // Fallback to commit message
                     recentCommits.push({
                         description: commitMessage.length > 80 ? commitMessage.substring(0, 80) + '...' : commitMessage,
-                        location: this.guessLocationFromCommitMessage(commitMessage, ''),
+                        location: 'General',
                         timestamp: commitDate,
-                        commitMessage: commitMessage
+                        commitMessage: commitMessage,
+                        type: 'Cambio General'
                     });
                 }
-            });
+            }
             
             console.log('Processed commits result:', recentCommits.length);
             return recentCommits.slice(0, 20); // Limit to 20 most recent
@@ -2853,6 +2893,31 @@ class ChapterViewer {
         }
         
         return location;
+    }
+
+    guessLocationFromFilePath(filePath) {
+        // Extract location from file path like "book1/C2/S3/main.txt"
+        const pathMatch = filePath.match(/book1\/C(\d+)(?:\/S(\d+)|\/SINOPSIS)?/);
+        
+        if (pathMatch) {
+            const chapterNum = parseInt(pathMatch[1]);
+            const sectionNum = pathMatch[2] ? parseInt(pathMatch[2]) : null;
+            
+            const chapter = this.bookStructure?.chapters?.find(ch => ch.id === `C${chapterNum}`);
+            let location = chapter ? chapter.title : `Capítulo ${chapterNum}`;
+            
+            if (sectionNum) {
+                const section = chapter?.sections?.find(s => s.id === `S${sectionNum}`);
+                location += section ? ` - ${section.title}` : ` - S${sectionNum}`;
+            } else if (filePath.includes('SINOPSIS')) {
+                location += ' - Sinopsis';
+            }
+            
+            return location;
+        }
+        
+        // Fallback to simplified location
+        return 'General';
     }
 
     async getRecentIssueComments() {
