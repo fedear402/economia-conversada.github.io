@@ -590,3 +590,45 @@ body {
         padding: 1px 2px;
     }
 }
+
+/* Character position markers - positioned above each line inside text box */
+.chapter-text, .section-text {
+    position: relative;
+    overflow: hidden; /* Contain markers within text box */
+}
+
+.text-line-with-markers {
+    position: relative;
+    margin-bottom: 8px; /* Smaller line separation */
+    padding-top: 12px; /* Space for markers */
+}
+
+.line-markers {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 12px;
+    user-select: none;
+    pointer-events: none;
+    overflow: hidden; /* Keep markers contained */
+}
+
+.character-marker {
+    position: absolute;
+    top: 0;
+    font-size: 0.6em;
+    color: #666; /* Brighter color */
+    opacity: 0.6; /* More visible */
+    font-family: 'Courier New', monospace;
+    font-weight: normal;
+    line-height: 1;
+    white-space: nowrap;
+    z-index: 1;
+    max-width: 30px; /* Limit marker width */
+    overflow: hidden;
+}
+
+.character-marker:hover {
+    opacity: 0.9; /* Even brighter on hover */
+}

@@ -1004,7 +1004,7 @@ class ChapterViewer {
         const textDiv = document.createElement('div');
         textDiv.className = `${type}-text`;
         
-        // Split text into paragraphs and handle line breaks
+        // First render text normally to let browser handle wrapping
         const paragraphs = text.split('\n\n').filter(p => p.trim());
         paragraphs.forEach(paragraph => {
             const p = document.createElement('p');
@@ -1019,12 +1019,204 @@ class ChapterViewer {
             textDiv.appendChild(p);
         });
         
+        // Add the text to DOM first so we can measure it
         content.innerHTML = '';
         content.appendChild(header);
         content.appendChild(textDiv);
         
+        // Wait for layout, then add markers
+        setTimeout(() => {
+            this.addVisualLineMarkers(textDiv, text);
+        }, 100);
+        
         // Dynamically adjust content padding based on header height
         this.adjustContentPadding();
+    }
+
+    addVisualLineMarkers(textDiv, originalText) {
+        const markerInterval = 80;
+        let globalCharacterCount = 0;
+        
+        // Calculate positions where \n lines start AND after every period
+        const textFileLineStarts = [];
+        const periodPositions = [];
+        
+        // Process the original text character by character to find periods and sentence starts
+        for (let i = 0; i < originalText.length; i++) {
+            // Find sentence starts (after period + space, or period + newline)
+            if (originalText[i] === '.' && i + 1 < originalText.length) {
+                // Check if next character is space or newline
+                if (originalText[i + 1] === ' ' || originalText[i + 1] === '\n') {
+                    // Find the start of the next sentence (skip spaces)
+                    let sentenceStart = i + 1;
+                    while (sentenceStart < originalText.length && (originalText[sentenceStart] === ' ' || originalText[sentenceStart] === '\n')) {
+                        sentenceStart++;
+                    }
+                    if (sentenceStart < originalText.length) {
+                        periodPositions.push(sentenceStart); // Position of first word of next sentence
+                    }
+                }
+            }
+            if (originalText[i] === '\n' && i > 0) {
+                textFileLineStarts.push(i + 1); // Position after the \n
+            }
+        }
+        
+        console.log('Period positions found:', periodPositions.slice(0, 10)); // Debug first 10
+        console.log('Line start positions:', textFileLineStarts.slice(0, 10)); // Debug first 10
+        
+        globalCharacterCount = 0;
+        
+        // Process each paragraph
+        const paragraphs = textDiv.querySelectorAll('p');
+        
+        paragraphs.forEach((paragraph, paragraphIndex) => {
+            if (paragraphIndex > 0) {
+                globalCharacterCount += 2; // Account for paragraph breaks
+            }
+            
+            // Clear existing content and rebuild with markers
+            const paragraphText = paragraph.textContent;
+            paragraph.innerHTML = '';
+            
+            // Split paragraph text into visual lines by measuring
+            const visualLines = this.splitIntoVisualLines(paragraphText, paragraph);
+            
+            visualLines.forEach((lineText, lineIndex) => {
+                // Create line container
+                const lineContainer = document.createElement('div');
+                lineContainer.className = 'text-line-with-markers';
+                
+                // Create markers for this visual line
+                const markersDiv = document.createElement('div');
+                markersDiv.className = 'line-markers';
+                
+                const lineStartChar = globalCharacterCount;
+                const lineEndChar = globalCharacterCount + lineText.length;
+                
+                // Collect all marker positions for this line
+                const markerPositions = new Set();
+                
+                // Add regular interval markers
+                for (let markerPos = Math.ceil(lineStartChar / markerInterval) * markerInterval; 
+                     markerPos < lineEndChar; 
+                     markerPos += markerInterval) {
+                    
+                    if (markerPos > lineStartChar) {
+                        markerPositions.add(markerPos);
+                    }
+                }
+                
+                // Add \n line start markers
+                textFileLineStarts.forEach(lineStartPos => {
+                    if (lineStartPos > lineStartChar && lineStartPos < lineEndChar) {
+                        markerPositions.add(lineStartPos);
+                    }
+                });
+                
+                // Add period markers (positions after each period)
+                periodPositions.forEach(periodPos => {
+                    if (periodPos >= lineStartChar && periodPos <= lineEndChar) {
+                        markerPositions.add(periodPos);
+                        console.log(`Adding period marker at position ${periodPos} for line ${lineStartChar}-${lineEndChar}`);
+                    }
+                });
+                
+                // Create markers for all positions
+                const sortedMarkers = Array.from(markerPositions).sort((a, b) => a - b);
+                console.log(`Creating ${sortedMarkers.length} markers for line "${lineText.substring(0, 30)}...": ${sortedMarkers.join(', ')}`);
+                
+                sortedMarkers.forEach(markerPos => {
+                    const charPositionInLine = markerPos - lineStartChar;
+                    const marker = document.createElement('span');
+                    marker.className = 'character-marker';
+                    marker.textContent = markerPos.toString();
+                    
+                    // Create a temporary span to measure exact character position
+                    const tempSpan = document.createElement('span');
+                    tempSpan.style.visibility = 'hidden';
+                    tempSpan.style.position = 'absolute';
+                    tempSpan.style.font = getComputedStyle(paragraph).font;
+                    tempSpan.textContent = lineText.substring(0, charPositionInLine);
+                    document.body.appendChild(tempSpan);
+                    
+                    // Position marker exactly above the character
+                    const exactPosition = tempSpan.offsetWidth;
+                    marker.style.left = `${exactPosition}px`;
+                    
+                    document.body.removeChild(tempSpan);
+                    markersDiv.appendChild(marker);
+                });
+                
+                // Add text content
+                const lineTextSpan = document.createElement('span');
+                lineTextSpan.textContent = lineText;
+                
+                lineContainer.appendChild(markersDiv);
+                lineContainer.appendChild(lineTextSpan);
+                paragraph.appendChild(lineContainer);
+                
+                globalCharacterCount += lineText.length;
+                
+                // Account for space between words when lines wrap
+                if (lineIndex < visualLines.length - 1) {
+                    globalCharacterCount += 1;
+                }
+            });
+        });
+    }
+    
+    getTextNodes(element) {
+        const textNodes = [];
+        const walker = document.createTreeWalker(
+            element,
+            NodeFilter.SHOW_TEXT,
+            null,
+            false
+        );
+        
+        let node;
+        while (node = walker.nextNode()) {
+            if (node.textContent.trim()) {
+                textNodes.push(node);
+            }
+        }
+        return textNodes;
+    }
+    
+    splitIntoVisualLines(text, containerElement) {
+        // Create temporary span to measure text
+        const tempSpan = document.createElement('span');
+        tempSpan.style.visibility = 'hidden';
+        tempSpan.style.position = 'absolute';
+        tempSpan.style.whiteSpace = 'nowrap';
+        tempSpan.style.font = getComputedStyle(containerElement).font;
+        document.body.appendChild(tempSpan);
+        
+        const containerWidth = containerElement.offsetWidth - 60; // Account for padding
+        const words = text.split(' ');
+        const lines = [];
+        let currentLine = '';
+        
+        words.forEach((word, index) => {
+            const testLine = currentLine + (currentLine ? ' ' : '') + word;
+            tempSpan.textContent = testLine;
+            
+            if (tempSpan.offsetWidth > containerWidth && currentLine) {
+                // Line is too long, start new line
+                lines.push(currentLine);
+                currentLine = word;
+            } else {
+                currentLine = testLine;
+            }
+        });
+        
+        if (currentLine) {
+            lines.push(currentLine);
+        }
+        
+        document.body.removeChild(tempSpan);
+        return lines;
     }
     
     adjustContentPadding() {
@@ -1053,6 +1245,7 @@ class ChapterViewer {
             }
         });
     }
+
 
     // To-Do content view functionality
     async loadTodoView() {

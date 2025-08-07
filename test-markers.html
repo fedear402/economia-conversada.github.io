@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Character Markers</title>
+    <style>
+        body {
+            font-family: 'Times New Roman', serif;
+            background-color: #f8f8f8;
+            color: #333;
+            line-height: 1.6;
+            padding: 20px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        /* Character position markers - positioned above each line inside text box */
+        .text-line-with-markers {
+            position: relative;
+            margin-bottom: 15px;
+        }
+
+        .line-markers {
+            position: absolute;
+            top: -12px;
+            left: 0;
+            right: 0;
+            height: 10px;
+            user-select: none;
+            pointer-events: none;
+        }
+
+        .character-marker {
+            position: absolute;
+            top: 0;
+            font-size: 0.6em;
+            color: #999;
+            opacity: 0.3;
+            font-family: 'Courier New', monospace;
+            font-weight: normal;
+            line-height: 1;
+            white-space: nowrap;
+            z-index: 1;
+        }
+
+        .character-marker:hover {
+            opacity: 0.7;
+        }
+
+        .section-text {
+            background-color: #fff;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            padding: 30px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            line-height: 1.8;
+            font-size: 1.1em;
+            position: relative;
+        }
+
+        .section-text p {
+            margin-bottom: 15px;
+            text-align: justify;
+        }
+    </style>
+</head>
+<body>
+    <h1>Test: Character Position Markers</h1>
+    <p>This is a test page to show how the character position markers look.</p>
+    
+    <div id="test-content"></div>
+
+    <script>
+        function createTextWithMarkers(text, container) {
+            const lines = text.split('\n');
+            let globalCharacterCount = 0;
+            const markerInterval = 80; // Show markers every 80 characters
+            
+            lines.forEach((line, lineIndex) => {
+                if (lineIndex > 0) {
+                    globalCharacterCount += 1; // Count line break
+                }
+                
+                // Create container for this line with markers
+                const lineContainer = document.createElement('div');
+                lineContainer.className = 'text-line-with-markers';
+                
+                // Create markers container for this line
+                const lineMarkersDiv = document.createElement('div');
+                lineMarkersDiv.className = 'line-markers';
+                
+                // Add character markers for positions that fall within this line
+                const lineStartChar = globalCharacterCount;
+                const lineEndChar = globalCharacterCount + line.length;
+                
+                // Find markers that should appear on this line
+                for (let markerPos = Math.ceil(lineStartChar / markerInterval) * markerInterval; 
+                     markerPos < lineEndChar; 
+                     markerPos += markerInterval) {
+                    
+                    if (markerPos <= lineStartChar) continue;
+                    
+                    const charPositionInLine = markerPos - lineStartChar;
+                    const marker = document.createElement('span');
+                    marker.className = 'character-marker';
+                    marker.textContent = markerPos.toString();
+                    
+                    // Position marker based on character position in line
+                    const charWidth = 8; // approximate pixels per character
+                    const leftPosition = charPositionInLine * charWidth;
+                    marker.style.left = `${leftPosition}px`;
+                    
+                    lineMarkersDiv.appendChild(marker);
+                }
+                
+                // Create the actual text content
+                const lineText = document.createElement('span');
+                lineText.textContent = line;
+                
+                // Add to containers
+                lineContainer.appendChild(lineMarkersDiv);
+                lineContainer.appendChild(lineText);
+                container.appendChild(lineContainer);
+                
+                // Update global character count
+                globalCharacterCount += line.length;
+            });
+        }
+
+        // Sample text for testing
+        const sampleText = `Sócrates: Buenos días. Pareces pensativo: ¿Qué te preocupa?
+Glaucón: Buenos días, maestro. Estuve observando a los mercaderes y compradores, y me pregunto: ¿qué es realmente la economía? Oigo hablar mucho de ella, pero no entiendo su verdadero significado.
+Sócrates: Es una pregunta fundamental. Para empezar, ¿qué ideas asocias con la economía?
+Glaucón: Dinero, mercados, riqueza, comercio, producción de bienes, impuestos y decisiones de los gobiernos.
+Sócrates: Mencionaste aspectos importantes, pero, ¿la economía se limita al dinero y al gobierno, o puede abarcar algo más?
+Glaucón: Supongo que incluye también cómo las personas manejan recursos como el tiempo, el dinero o incluso qué comprar y qué, no.
+Sócrates: Justamente. La economía trata de la gestión de recursos. Ahora bien, ¿qué opinas de esos recursos? ¿Son ilimitados?
+Glaucón: No, claro que no. Siempre hay límites: tierra, alimentos, dinero e incluso tiempo.`;
+
+        // Create the test display
+        function createTestDisplay() {
+            const container = document.getElementById('test-content');
+            
+            // Create text div
+            const textDiv = document.createElement('div');
+            textDiv.className = 'section-text';
+            
+            // Create text with markers
+            createTextWithMarkers(sampleText, textDiv);
+            
+            container.appendChild(textDiv);
+        }
+
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', createTestDisplay);
+    </script>
+</body>
+</html>
