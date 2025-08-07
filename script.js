@@ -1041,28 +1041,41 @@ class ChapterViewer {
         const textFileLineStarts = [];
         const periodPositions = [];
         
-        // Process the original text character by character to find periods and sentence starts
-        for (let i = 0; i < originalText.length; i++) {
-            // Find sentence starts (after period + space, or period + newline)
-            if (originalText[i] === '.' && i + 1 < originalText.length) {
-                // Check if next character is space or newline
-                if (originalText[i + 1] === ' ' || originalText[i + 1] === '\n') {
-                    // Find the start of the next sentence (skip spaces)
-                    let sentenceStart = i + 1;
-                    while (sentenceStart < originalText.length && (originalText[sentenceStart] === ' ' || originalText[sentenceStart] === '\n')) {
-                        sentenceStart++;
-                    }
-                    if (sentenceStart < originalText.length) {
-                        periodPositions.push(sentenceStart); // Position of first word of next sentence
-                    }
+        // Find ALL sentence starts in the text
+        const sentenceStarts = [];
+        
+        // Split text into sentences using multiple sentence endings
+        const sentences = originalText.split(/[.!?]+/);
+        let currentPos = 0;
+        
+        sentences.forEach((sentence, index) => {
+            if (index === 0) {
+                // First sentence starts at position 0
+                sentenceStarts.push(0);
+            } else {
+                // Find the start of this sentence after the previous sentence + punctuation
+                currentPos += sentences[index - 1].length;
+                
+                // Skip over punctuation and spaces to find the actual sentence start
+                while (currentPos < originalText.length && 
+                       /[.!?\s\n]/.test(originalText[currentPos])) {
+                    currentPos++;
+                }
+                
+                if (currentPos < originalText.length) {
+                    sentenceStarts.push(currentPos);
                 }
             }
+        });
+        
+        // Also find \n line starts
+        for (let i = 0; i < originalText.length; i++) {
             if (originalText[i] === '\n' && i > 0) {
                 textFileLineStarts.push(i + 1); // Position after the \n
             }
         }
         
-        console.log('Period positions found:', periodPositions.slice(0, 10)); // Debug first 10
+        console.log('Sentence starts found:', sentenceStarts.slice(0, 15)); // Debug first 15
         console.log('Line start positions:', textFileLineStarts.slice(0, 10)); // Debug first 10
         
         globalCharacterCount = 0;
@@ -1114,11 +1127,11 @@ class ChapterViewer {
                     }
                 });
                 
-                // Add period markers (positions after each period)
-                periodPositions.forEach(periodPos => {
-                    if (periodPos >= lineStartChar && periodPos <= lineEndChar) {
-                        markerPositions.add(periodPos);
-                        console.log(`Adding period marker at position ${periodPos} for line ${lineStartChar}-${lineEndChar}`);
+                // Add sentence start markers
+                sentenceStarts.forEach(sentencePos => {
+                    if (sentencePos >= lineStartChar && sentencePos <= lineEndChar) {
+                        markerPositions.add(sentencePos);
+                        console.log(`Adding sentence marker at position ${sentencePos} for line ${lineStartChar}-${lineEndChar}`);
                     }
                 });
                 
