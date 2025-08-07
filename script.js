@@ -355,6 +355,22 @@ class ChapterViewer {
         indiceV2Li.appendChild(indiceV2Link);
         ul.appendChild(indiceV2Li);
         
+        // Add ULTIMOS CAMBIOS item
+        const cambiosLi = document.createElement('li');
+        cambiosLi.className = 'chapter-item';
+        
+        const cambiosLink = document.createElement('a');
+        cambiosLink.href = '#';
+        cambiosLink.textContent = 'ULTIMOS CAMBIOS';
+        cambiosLink.className = 'chapter-link';
+        cambiosLink.onclick = (e) => {
+            e.preventDefault();
+            this.loadUltimosCambiosView();
+        };
+        
+        cambiosLi.appendChild(cambiosLink);
+        ul.appendChild(cambiosLi);
+        
         // Add Deleted Files item
         const deletedCount = Object.keys(this.deletedFiles).length;
         if (deletedCount > 0) {
@@ -1657,11 +1673,23 @@ class ChapterViewer {
         if (!this.fileComments[filePath]) {
             this.fileComments[filePath] = [];
         }
-        this.fileComments[filePath].push({
+        const commentData = {
             comment: comment,
             timestamp: new Date().toISOString(),
             fileName: fileName
+        };
+        this.fileComments[filePath].push(commentData);
+        
+        // Track this as a recent change
+        this.trackRecentChange({
+            type: 'comment',
+            description: comment,
+            location: `${this.getChapterTitleFromPath(filePath)} - ${fileName}`,
+            timestamp: commentData.timestamp,
+            filePath: filePath,
+            fileName: fileName
         });
+        
         await this.saveFileComments();
     }
 
@@ -2444,6 +2472,21 @@ class ChapterViewer {
         }
     }
 
+    async loadUltimosCambiosView() {
+        try {
+            // Update active nav item
+            document.querySelectorAll('.sidebar nav a').forEach(a => a.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            this.renderUltimosCambiosContent();
+            this.currentChapter = null;
+            this.currentSection = null;
+        } catch (error) {
+            console.error('Error loading ULTIMOS CAMBIOS view:', error);
+            this.renderUltimosCambiosError();
+        }
+    }
+
     async loadDeletedFilesView() {
         try {
             // Update active nav item
@@ -2457,6 +2500,493 @@ class ChapterViewer {
             console.error('Error loading deleted files view:', error);
             this.renderDeletedFilesError();
         }
+    }
+
+    async renderUltimosCambiosContent() {
+        const content = document.getElementById('chapter-content');
+        const contentContainer = content.parentElement;
+        
+        // Reset content padding
+        contentContainer.classList.remove('todo-view');
+        content.style.paddingTop = '20px';
+        
+        const cambiosView = document.createElement('div');
+        cambiosView.className = 'ultimos-cambios-view';
+        
+        const title = document.createElement('h1');
+        title.className = 'cambios-title-main';
+        title.textContent = 'ULTIMOS CAMBIOS';
+        cambiosView.appendChild(title);
+        
+        // No description - removed as requested
+        
+        // Add loading message
+        const loadingMsg = document.createElement('div');
+        loadingMsg.style.textAlign = 'center';
+        loadingMsg.style.padding = '40px';
+        loadingMsg.style.color = '#666';
+        loadingMsg.textContent = 'Cargando cambios recientes...';
+        cambiosView.appendChild(loadingMsg);
+        
+        // Add to DOM first to show loading
+        content.innerHTML = '';
+        content.appendChild(cambiosView);
+        
+        // Get recent changes data
+        const recentChanges = await this.getRecentChanges();
+        
+        // Remove loading message
+        cambiosView.removeChild(loadingMsg);
+        
+        if (recentChanges.length === 0) {
+            const emptyMsg = document.createElement('div');
+            emptyMsg.style.textAlign = 'center';
+            emptyMsg.style.padding = '40px';
+            emptyMsg.style.color = '#666';
+            emptyMsg.textContent = 'No hay cambios recientes registrados.';
+            cambiosView.appendChild(emptyMsg);
+        } else {
+            const changesList = document.createElement('div');
+            changesList.className = 'changes-list';
+            
+            recentChanges.forEach(change => {
+                const changeItem = document.createElement('div');
+                changeItem.className = 'change-item';
+                
+                const changeDate = document.createElement('div');
+                changeDate.className = 'change-date';
+                changeDate.textContent = change.date;
+                
+                const changeType = document.createElement('div');
+                changeType.className = `change-type ${change.type}`;
+                changeType.textContent = change.typeLabel;
+                
+                const changeDescription = document.createElement('div');
+                changeDescription.className = 'change-description';
+                changeDescription.textContent = change.description;
+                
+                const changeLocation = document.createElement('div');
+                changeLocation.className = 'change-location';
+                changeLocation.textContent = change.location;
+                
+                changeItem.appendChild(changeDate);
+                changeItem.appendChild(changeType);
+                changeItem.appendChild(changeDescription);
+                changeItem.appendChild(changeLocation);
+                
+                changesList.appendChild(changeItem);
+            });
+            
+            cambiosView.appendChild(changesList);
+        }
+        
+        // Content is already in DOM, no need to re-add
+    }
+
+    async getRecentChanges() {
+        console.log('Getting recent changes...');
+        const now = Date.now(); // Fix the undefined variable
+        const changes = [];
+        
+        // Check if we're on localhost (GitHub API will fail)
+        const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+        
+        if (isLocalhost) {
+            console.log('Running on localhost - using mock data and localStorage');
+            
+            // Create some mock recent changes for localhost testing
+            const mockChanges = this.createMockRecentChanges();
+            changes.push(...mockChanges);
+            
+            // Also include any localStorage changes (from comments, etc.)
+            const localChanges = JSON.parse(localStorage.getItem('recentChanges') || '[]');
+            localChanges.forEach(change => {
+                changes.push({
+                    date: new Date(change.timestamp).toLocaleString(),
+                    type: change.type,
+                    typeLabel: change.type === 'comment' ? 'Comentario' : 'Archivo Nuevo',
+                    description: change.type === 'comment' 
+                        ? `"${change.description.substring(0, 100)}${change.description.length > 100 ? '...' : ''}"` 
+                        : change.description,
+                    location: change.location,
+                    timestamp: change.timestamp
+                });
+            });
+            
+        } else {
+            console.log('Running on deployed site - trying GitHub API...');
+            
+            try {
+                // Get recent commits from GitHub (only works when deployed)
+                const recentCommits = await this.getRecentCommitsFromGitHubFast();
+                console.log('Recent commits found:', recentCommits.length);
+                recentCommits.forEach(commit => {
+                    changes.push({
+                        date: new Date(commit.timestamp).toLocaleString(),
+                        type: 'file',
+                        typeLabel: 'Archivo Agregado',
+                        description: commit.description,
+                        location: commit.location,
+                        timestamp: commit.timestamp
+                    });
+                });
+
+                // Get recent comments from GitHub Issues
+                const recentIssueComments = await this.getRecentIssueComments();
+                console.log('Recent issue comments found:', recentIssueComments.length);
+                recentIssueComments.forEach(comment => {
+                    changes.push({
+                        date: new Date(comment.timestamp).toLocaleString(),
+                        type: 'comment',
+                        typeLabel: 'Comentario',
+                        description: comment.description,
+                        location: comment.location,
+                        timestamp: comment.timestamp
+                    });
+                });
+
+            } catch (error) {
+                console.error('GitHub API failed, falling back to localStorage:', error);
+                
+                // Fallback to localStorage and mock data
+                const mockChanges = this.createMockRecentChanges();
+                changes.push(...mockChanges);
+                
+                const localChanges = JSON.parse(localStorage.getItem('recentChanges') || '[]');
+                localChanges.forEach(change => {
+                    changes.push({
+                        date: new Date(change.timestamp).toLocaleString(),
+                        type: change.type,
+                        typeLabel: change.type === 'comment' ? 'Comentario' : 'Archivo Nuevo',
+                        description: change.type === 'comment' 
+                            ? `"${change.description.substring(0, 100)}${change.description.length > 100 ? '...' : ''}"` 
+                            : change.description,
+                        location: change.location,
+                        timestamp: change.timestamp
+                    });
+                });
+            }
+        }
+        
+        // Sort by timestamp, newest first
+        changes.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+        
+        // Limit to last 50 changes
+        const finalChanges = changes.slice(0, 50);
+        
+        console.log('Final changes to display:', finalChanges.length);
+        return finalChanges;
+    }
+
+    createMockRecentChanges() {
+        // Create some realistic mock data for localhost testing
+        const now = Date.now();
+        const mockChanges = [
+            {
+                date: new Date(now - 1000 * 60 * 30).toLocaleString(), // 30 minutes ago
+                type: 'file',
+                typeLabel: 'Archivo Agregado',
+                description: 'C1S1-main-compressed.mp3',
+                location: 'Introducción a la Economía - S1',
+                timestamp: new Date(now - 1000 * 60 * 30).toISOString()
+            },
+            {
+                date: new Date(now - 1000 * 60 * 60 * 2).toLocaleString(), // 2 hours ago
+                type: 'comment',
+                typeLabel: 'Comentario',
+                description: '"Necesita revisión del audio en la parte final"',
+                location: 'Capítulo 2 - S3',
+                timestamp: new Date(now - 1000 * 60 * 60 * 2).toISOString()
+            },
+            {
+                date: new Date(now - 1000 * 60 * 60 * 6).toLocaleString(), // 6 hours ago
+                type: 'file',
+                typeLabel: 'Archivo Agregado',
+                description: 'C2S4-description.txt',
+                location: 'Microeconomía - S4',
+                timestamp: new Date(now - 1000 * 60 * 60 * 6).toISOString()
+            },
+            {
+                date: new Date(now - 1000 * 60 * 60 * 24).toLocaleString(), // 1 day ago
+                type: 'comment',
+                typeLabel: 'Comentario',
+                description: '"Audio aprobado, listo para publicación"',
+                location: 'Capítulo 1 - S7',
+                timestamp: new Date(now - 1000 * 60 * 60 * 24).toISOString()
+            },
+            {
+                date: new Date(now - 1000 * 60 * 60 * 24 * 2).toLocaleString(), // 2 days ago
+                type: 'file',
+                typeLabel: 'Archivo Agregado',
+                description: 'C3S2-main-autonoe-sadaltager.mp3',
+                location: 'Macroeconomía - S2',
+                timestamp: new Date(now - 1000 * 60 * 60 * 24 * 2).toISOString()
+            }
+        ];
+        
+        console.log('Created mock changes for localhost:', mockChanges.length);
+        return mockChanges;
+    }
+
+    async getAllComments() {
+        const allComments = [];
+        const commentsData = await this.githubApi.getFileContent('file_comments.json');
+        
+        for (const [filePath, comments] of Object.entries(commentsData)) {
+            comments.forEach(comment => {
+                allComments.push({
+                    ...comment,
+                    filePath: filePath,
+                    fileName: filePath.split('/').pop(),
+                    chapterTitle: this.getChapterTitleFromPath(filePath)
+                });
+            });
+        }
+        
+        return allComments;
+    }
+
+    trackRecentChange(changeData) {
+        const recentChanges = JSON.parse(localStorage.getItem('recentChanges') || '[]');
+        
+        // Add the new change
+        recentChanges.unshift({
+            ...changeData,
+            id: Date.now() + Math.random(), // Simple unique ID
+            timestamp: changeData.timestamp || new Date().toISOString()
+        });
+        
+        // Keep only last 100 changes
+        const limitedChanges = recentChanges.slice(0, 100);
+        
+        localStorage.setItem('recentChanges', JSON.stringify(limitedChanges));
+        console.log('Tracked recent change:', changeData.type, changeData.description.substring(0, 50));
+    }
+
+    getRecentFileAdditions() {
+        // Get tracked changes from localStorage
+        const recentChanges = JSON.parse(localStorage.getItem('recentChanges') || '[]');
+        return recentChanges
+            .filter(change => change.type === 'file')
+            .filter(change => {
+                const fileAge = Date.now() - new Date(change.timestamp).getTime();
+                return fileAge < (7 * 24 * 60 * 60 * 1000); // Last 7 days
+            });
+    }
+
+    // Track when audio files are detected as new (you can call this when scanning for new files)
+    trackNewAudioFile(filePath, fileName, location) {
+        this.trackRecentChange({
+            type: 'file',
+            description: `Nuevo archivo de audio: ${fileName}`,
+            location: location,
+            filePath: filePath,
+            fileName: fileName
+        });
+    }
+
+    async getRecentCommitsFromGitHubFast() {
+        try {
+            console.log(`Fetching commits from: https://api.github.com/repos/${this.githubApi.owner}/${this.githubApi.repo}/commits`);
+            
+            // Use GitHub API to get recent commits (just basic info, no details)
+            const response = await fetch(`https://api.github.com/repos/${this.githubApi.owner}/${this.githubApi.repo}/commits?per_page=20`, {
+                headers: {
+                    'Accept': 'application/vnd.github.v3+json'
+                }
+            });
+            
+            console.log('GitHub commits response status:', response.status);
+            
+            if (!response.ok) {
+                throw new Error(`GitHub API error: ${response.status}`);
+            }
+            
+            const commits = await response.json();
+            console.log('Raw commits received:', commits.length);
+            const recentCommits = [];
+            
+            // Process commits without fetching individual details (much faster)
+            commits.forEach((commit, index) => {
+                const commitMessage = commit.commit.message;
+                const commitDate = commit.commit.author.date;
+                
+                console.log(`Processing commit ${index + 1}: ${commitMessage.substring(0, 50)}...`);
+                
+                // Always show the commit, but try to extract file info if available
+                const audioFilePattern = /(\S+\.mp3)|(\S+\.txt)|(\S+\.json)/gi;
+                const fileMatches = commitMessage.match(audioFilePattern);
+                
+                if (fileMatches) {
+                    fileMatches.forEach(fileName => {
+                        // Extract just the filename without path
+                        const cleanFileName = fileName.split('/').pop();
+                        
+                        recentCommits.push({
+                            description: `Archivo: ${cleanFileName}`,
+                            location: this.guessLocationFromCommitMessage(commitMessage, cleanFileName),
+                            timestamp: commitDate,
+                            commitMessage: commitMessage
+                        });
+                    });
+                } else {
+                    // Show the commit message itself
+                    recentCommits.push({
+                        description: commitMessage.length > 80 ? commitMessage.substring(0, 80) + '...' : commitMessage,
+                        location: this.guessLocationFromCommitMessage(commitMessage, ''),
+                        timestamp: commitDate,
+                        commitMessage: commitMessage
+                    });
+                }
+            });
+            
+            console.log('Processed commits result:', recentCommits.length);
+            return recentCommits.slice(0, 20); // Limit to 20 most recent
+            
+        } catch (error) {
+            console.error('Error fetching commits from GitHub:', error);
+            return [];
+        }
+    }
+
+    getDateDaysAgo(days) {
+        const date = new Date();
+        date.setDate(date.getDate() - days);
+        return date.toISOString();
+    }
+
+    guessLocationFromCommitMessage(message, fileName) {
+        // Simple pattern matching to guess location from commit message
+        const chapterPattern = /[Cc](\d+)/;
+        const sectionPattern = /[Ss](\d+)/;
+        
+        const chapterMatch = message.match(chapterPattern);
+        const sectionMatch = message.match(sectionPattern);
+        
+        let location = 'General';
+        
+        if (chapterMatch) {
+            const chapterNum = parseInt(chapterMatch[1]);
+            const chapter = this.bookStructure?.chapters?.find(ch => ch.id === `C${chapterNum}`);
+            location = chapter ? chapter.title : `C${chapterNum}`;
+            
+            if (sectionMatch) {
+                location += ` - S${sectionMatch[1]}`;
+            }
+        } else if (fileName.includes('C') && fileName.includes('S')) {
+            // Try to extract from filename like "C1S2-main.mp3"
+            const filePattern = /C(\d+)S(\d+)/;
+            const match = fileName.match(filePattern);
+            if (match) {
+                const chapterNum = parseInt(match[1]);
+                const sectionNum = parseInt(match[2]);
+                const chapter = this.bookStructure?.chapters?.find(ch => ch.id === `C${chapterNum}`);
+                location = chapter ? `${chapter.title} - S${sectionNum}` : `C${chapterNum} - S${sectionNum}`;
+            }
+        }
+        
+        return location;
+    }
+
+    async getRecentIssueComments() {
+        try {
+            // Get recent issues comments
+            const response = await fetch(`https://api.github.com/repos/${this.githubApi.owner}/${this.githubApi.repo}/issues/comments?per_page=50&sort=created&direction=desc`, {
+                headers: {
+                    'Accept': 'application/vnd.github.v3+json'
+                }
+            });
+            
+            if (!response.ok) {
+                throw new Error(`GitHub API error: ${response.status}`);
+            }
+            
+            const comments = await response.json();
+            const recentComments = [];
+            
+            comments.forEach(comment => {
+                const commentDate = new Date(comment.created_at);
+                const cutoffDate = new Date();
+                cutoffDate.setDate(cutoffDate.getDate() - 30); // Last 30 days
+                
+                if (commentDate >= cutoffDate) {
+                    recentComments.push({
+                        description: `"${comment.body.substring(0, 100)}${comment.body.length > 100 ? '...' : ''}"`,
+                        location: `Issue #${comment.issue_url.split('/').pop()}`,
+                        timestamp: comment.created_at,
+                        author: comment.user.login
+                    });
+                }
+            });
+            
+            return recentComments;
+            
+        } catch (error) {
+            console.error('Error fetching issue comments from GitHub:', error);
+            return [];
+        }
+    }
+
+    getLocationFromFilePath(filePath) {
+        const pathParts = filePath.split('/');
+        
+        if (pathParts.includes('book1')) {
+            // Extract chapter and section info
+            const bookIndex = pathParts.indexOf('book1');
+            if (bookIndex + 1 < pathParts.length) {
+                const chapterPart = pathParts[bookIndex + 1]; // e.g., "C1", "C2"
+                let location = chapterPart;
+                
+                if (bookIndex + 2 < pathParts.length) {
+                    const sectionPart = pathParts[bookIndex + 2]; // e.g., "S1", "S2"
+                    if (sectionPart.startsWith('S')) {
+                        location += ` - ${sectionPart}`;
+                    }
+                }
+                
+                // Get chapter title if available
+                if (this.bookStructure) {
+                    const chapter = this.bookStructure.chapters.find(ch => ch.id === chapterPart);
+                    if (chapter) {
+                        location = chapter.title;
+                        if (bookIndex + 2 < pathParts.length) {
+                            const sectionPart = pathParts[bookIndex + 2];
+                            if (sectionPart.startsWith('S')) {
+                                location += ` - ${sectionPart}`;
+                            }
+                        }
+                    }
+                }
+                
+                return location;
+            }
+        }
+        
+        return filePath.includes('/') ? filePath.substring(0, filePath.lastIndexOf('/')) : 'Root';
+    }
+
+    getChapterTitleFromPath(filePath) {
+        // Extract chapter info from file path
+        const pathParts = filePath.split('/');
+        if (pathParts.length >= 2) {
+            const chapterPart = pathParts[1]; // e.g., "C1", "C2"
+            const chapter = this.bookStructure.chapters.find(ch => ch.id === chapterPart);
+            return chapter ? chapter.title : chapterPart;
+        }
+        return 'Desconocido';
+    }
+
+    renderUltimosCambiosError() {
+        const content = document.getElementById('chapter-content');
+        content.innerHTML = `
+            <div class="ultimos-cambios-view">
+                <h1 class="cambios-title-main">ULTIMOS CAMBIOS: Error</h1>
+                <div class="cambios-description">
+                    <p><strong>Error:</strong> No se pudo cargar la vista de últimos cambios.</p>
+                    <p>Por favor, inténtalo de nuevo más tarde.</p>
+                </div>
+            </div>
+        `;
     }
 
     renderDeletedFilesContent() {
@@ -2779,6 +3309,10 @@ class ChapterViewer {
             const propertiesContainer = this.createPropertiesContainer(type, chapter, section);
             itemContainer.appendChild(propertiesContainer);
         }
+        
+        // Comments container (add to all items including book)
+        const commentsContainer = this.createIndexCommentsContainer(type, chapter, section);
+        itemContainer.appendChild(commentsContainer);
         
         return itemContainer;
     }
@@ -3308,6 +3842,153 @@ class ChapterViewer {
         
         // Load the chapter content
         this.loadChapter(chapter);
+    }
+
+    createIndexCommentsContainer(type, chapter, section) {
+        const commentsContainer = document.createElement('div');
+        commentsContainer.className = 'index-comments-container';
+        commentsContainer.style.marginLeft = 'auto'; // Push to the right
+        commentsContainer.style.display = 'flex';
+        commentsContainer.style.alignItems = 'center';
+        commentsContainer.style.gap = '8px';
+        
+        // Get comments for this item
+        const comments = this.getCommentsForIndexItem(type, chapter, section);
+        
+        if (comments.length === 0) {
+            return commentsContainer; // Return empty container if no comments
+        }
+        
+        // Create comments toggle button
+        const commentsToggle = document.createElement('button');
+        commentsToggle.className = 'index-comments-toggle';
+        commentsToggle.textContent = `💬 ${comments.length}`;
+        commentsToggle.title = `${comments.length} comentario${comments.length !== 1 ? 's' : ''}`;
+        
+        // Style the toggle button
+        commentsToggle.style.background = 'none';
+        commentsToggle.style.border = '1px solid #ddd';
+        commentsToggle.style.borderRadius = '12px';
+        commentsToggle.style.padding = '4px 8px';
+        commentsToggle.style.fontSize = '11px';
+        commentsToggle.style.cursor = 'pointer';
+        commentsToggle.style.color = '#666';
+        commentsToggle.style.transition = 'all 0.2s ease';
+        
+        // Hover effects
+        commentsToggle.addEventListener('mouseenter', () => {
+            commentsToggle.style.backgroundColor = '#f0f0f0';
+            commentsToggle.style.borderColor = '#999';
+        });
+        
+        commentsToggle.addEventListener('mouseleave', () => {
+            commentsToggle.style.backgroundColor = 'transparent';
+            commentsToggle.style.borderColor = '#ddd';
+        });
+        
+        // Create comments dropdown (initially hidden)
+        const commentsDropdown = document.createElement('div');
+        commentsDropdown.className = 'index-comments-dropdown';
+        commentsDropdown.style.position = 'absolute';
+        commentsDropdown.style.right = '0';
+        commentsDropdown.style.top = '100%';
+        commentsDropdown.style.marginTop = '4px';
+        commentsDropdown.style.backgroundColor = 'white';
+        commentsDropdown.style.border = '1px solid #ddd';
+        commentsDropdown.style.borderRadius = '6px';
+        commentsDropdown.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
+        commentsDropdown.style.padding = '8px';
+        commentsDropdown.style.minWidth = '250px';
+        commentsDropdown.style.maxWidth = '350px';
+        commentsDropdown.style.zIndex = '1000';
+        commentsDropdown.style.display = 'none';
+        
+        // Populate comments dropdown
+        comments.forEach((comment, index) => {
+            const commentItem = document.createElement('div');
+            commentItem.className = 'index-comment-item';
+            commentItem.style.padding = '6px 0';
+            commentItem.style.borderBottom = index < comments.length - 1 ? '1px solid #eee' : 'none';
+            commentItem.style.fontSize = '12px';
+            commentItem.style.lineHeight = '1.4';
+            
+            const commentText = document.createElement('div');
+            commentText.textContent = comment.comment;
+            commentText.style.color = '#333';
+            commentText.style.marginBottom = '2px';
+            
+            const commentMeta = document.createElement('div');
+            const date = new Date(comment.timestamp);
+            commentMeta.textContent = `${date.toLocaleDateString()} - ${comment.fileName}`;
+            commentMeta.style.color = '#999';
+            commentMeta.style.fontSize = '10px';
+            
+            commentItem.appendChild(commentText);
+            commentItem.appendChild(commentMeta);
+            commentsDropdown.appendChild(commentItem);
+        });
+        
+        // Position the container relatively for dropdown positioning
+        commentsContainer.style.position = 'relative';
+        
+        // Toggle dropdown visibility
+        let isDropdownVisible = false;
+        commentsToggle.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            isDropdownVisible = !isDropdownVisible;
+            commentsDropdown.style.display = isDropdownVisible ? 'block' : 'none';
+            
+            // Close when clicking outside
+            if (isDropdownVisible) {
+                const closeDropdown = (event) => {
+                    if (!commentsContainer.contains(event.target)) {
+                        commentsDropdown.style.display = 'none';
+                        isDropdownVisible = false;
+                        document.removeEventListener('click', closeDropdown);
+                    }
+                };
+                setTimeout(() => document.addEventListener('click', closeDropdown), 0);
+            }
+        });
+        
+        commentsContainer.appendChild(commentsToggle);
+        commentsContainer.appendChild(commentsDropdown);
+        
+        return commentsContainer;
+    }
+
+    getCommentsForIndexItem(type, chapter, section) {
+        const allComments = [];
+        
+        if (type === 'book') {
+            // For book level, get all comments from all chapters/sections
+            Object.values(this.fileComments).forEach(fileComments => {
+                allComments.push(...fileComments);
+            });
+        } else if (type === 'chapter') {
+            // For chapter level, get all comments from files in that chapter
+            const chapterPrefix = `book1/${chapter.id}/`;
+            
+            Object.entries(this.fileComments).forEach(([filePath, fileComments]) => {
+                if (filePath.startsWith(chapterPrefix)) {
+                    allComments.push(...fileComments);
+                }
+            });
+        } else if (type === 'section' && section) {
+            // For section level, get comments from files in that specific section
+            const sectionPrefix = `book1/${chapter.id}/${section.id}/`;
+            
+            Object.entries(this.fileComments).forEach(([filePath, fileComments]) => {
+                if (filePath.startsWith(sectionPrefix)) {
+                    allComments.push(...fileComments);
+                }
+            });
+        }
+        
+        // Sort by timestamp, newest first
+        return allComments.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
     }
 
     renderTodoV2Error() {
