@@ -1681,6 +1681,38 @@ class ChapterViewer {
         return this.fileComments[filePath] || [];
     }
 
+    getChapterTitleFromPath(filePath) {
+        // Extract chapter and section from path like "book1/C2/S3/main.txt"
+        const pathMatch = filePath.match(/book1\/C(\d+)(?:\/S(\d+)|\/SINOPSIS)?/);
+        
+        if (pathMatch) {
+            const chapterNum = parseInt(pathMatch[1]);
+            const sectionNum = pathMatch[2] ? parseInt(pathMatch[2]) : null;
+            
+            const chapter = this.bookStructure?.chapters?.find(ch => ch.id === `C${chapterNum}`);
+            let location = chapter ? chapter.title : `Capítulo ${chapterNum}`;
+            
+            if (sectionNum) {
+                const section = chapter?.sections?.find(s => s.id === `S${sectionNum}`);
+                location += section ? ` - ${section.title}` : ` - S${sectionNum}`;
+            } else if (filePath.includes('SINOPSIS')) {
+                location += ' - Sinopsis';
+            }
+            
+            return location;
+        }
+        
+        // Fallback to simple extraction
+        if (filePath.includes('/C') && filePath.includes('/S')) {
+            const parts = filePath.split('/');
+            const chapterPart = parts.find(p => p.startsWith('C'));
+            const sectionPart = parts.find(p => p.startsWith('S'));
+            return `${chapterPart}${sectionPart ? ' - ' + sectionPart : ''}`;
+        }
+        
+        return 'General';
+    }
+
     showCommentModal(filePath, fileName, callback) {
         // Create modal overlay
         const modalOverlay = document.createElement('div');
