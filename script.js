@@ -2456,6 +2456,20 @@ class ChapterViewer {
         }
     }
 
+    async loadDeletedFilesView() {
+        try {
+            // Update active nav item
+            document.querySelectorAll('.sidebar nav a').forEach(a => a.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            this.renderDeletedFilesContent();
+            this.currentChapter = null;
+            this.currentSection = null;
+        } catch (error) {
+            console.error('Error loading deleted files view:', error);
+            this.renderDeletedFilesError();
+        }
+    }
 
     renderDeletedFilesContent() {
         const content = document.getElementById('chapter-content');
